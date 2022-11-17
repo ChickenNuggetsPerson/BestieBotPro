@@ -108,7 +108,7 @@ void autonomous(void) {
 
   if ( not iterateCycle && botAi.running) {
     Brain.Screen.newLine();
-    Brain.Screen.print(" There was an error with the autonomous ");
+    Brain.Screen.print("There was an error with the autonomous ");
   };
     
 }

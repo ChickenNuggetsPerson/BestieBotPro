@@ -68,11 +68,14 @@ bool ai::iterate() {
 
 // Runs the behavior at the coresponding personality index
 bool ai::runTask( int taskNum ) {
+
+  // Debug Messages
   aiDebug("Running Task: ");
   Brain.Screen.print( taskNum );
   Brain.Screen.print( "  " );
   Brain.Screen.print( personality[taskNum] );
 
+  // Run the specified behavior
   if (strcmp(personality[taskNum], "roller") == 0) { return changeRoller(); };
   if (strcmp(personality[taskNum], "collect") == 0) { return collectDisk(); };
 
