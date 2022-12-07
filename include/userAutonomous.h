@@ -2,41 +2,46 @@
 
 
 
+// This is the file that defines the ai class
+
 class ai {
   private:
     
-    const char* personality[2] = {"collect", "roller"};
-    int personalitySize = 2;
+
+    int personality[10] = {};
+    int personalitySize = 10;
     
     // Behaviors
-    bool changeRoller();              // roller
-    bool collectDisk();               // collect
+    bool changeRoller();              // 1
+    bool collectDisk();               // 2
+    bool stationaryLaunch();          // 3
 
     // Private Methods
     bool runTask( int taskNum );
     
     // Misc things 
-    const char* teamColor = "";
+    int teamColor = 0;
     int currentTask = -1;
-
-    void aiError(const char* message);
-    void aiDebug(const char* message);
-
-
-
 
   public:
     
     // Methods
-    ai( const char* inputTeamColor );
+    ai( int fallbackColor );
+    void init();
+
     void diskEntered();
 
 
     bool iterate();
 
     bool running = true;
-    
-    
+
+    void aiError(const char* message);
+    void aiDebug(const char* message);
+
 
     
+    unsigned int readFile(const char* fileName);
+    void writeFile(const char* fileName, unsigned int numToWrite);
+
 };

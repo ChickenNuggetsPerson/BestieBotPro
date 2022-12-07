@@ -13,9 +13,11 @@
 // Drivetrain           drivetrain    19, 20, 11, 12  
 // Controller1          controller                    
 // LauncherGroup        motor_group   14, 15          
-// PickerUper           motor         6               
+// PickerUper           motor         16              
 // LauncherFeeder       motor         13              
-// DiskLimitSwitch      limit         A               
+// DiskLimitSwitch      limit         H               
+// Optical              optical       17              
+// fnewmatics           digital_out   A               
 // ---- END VEXCODE CONFIGURED DEVICES ----
 
 #include "vex.h"
@@ -24,15 +26,53 @@
 #include "userAutonomous.h"
 #include "userFunctions.h"
 
-
 using namespace vex;
 
 
-float visionTurnPercent = 0;
-float visionTurnDirection = 0;
+
+ai botAi( 1 ); // Creates the autonomous ai object
 
 
-ai botAi("blue");
+
+// Phenumatics launch code
+bool launchConfirm = false;
+
+void pneumaticPressed( void ) {
+
+  launchConfirm = true; // When launchConfirm = true, it will show the confirm menu on the controller 
+  bool confirm = true;
+
+  Controller1.rumble("..");
+  
+  while (confirm) { 
+    
+    // Runs a confirm menu on the controller screen so the extender does not acidentally goes off
+    
+    wait(0.1, seconds);
+
+    if (Controller1.ButtonLeft.pressing()) {
+      confirm = false;
+      launchConfirm = false;
+    }
+
+    if (Controller1.ButtonRight.pressing()) {
+      // Launch
+
+      botAi.aiDebug("Launching");
+
+      fnewmatics.set(true);
+
+      confirm = false;
+      launchConfirm = false;
+
+      wait(2, seconds);
+      fnewmatics.set(false);
+    }
+
+  }
+};
+
+
 
 
 // A global instance of competition
@@ -53,8 +93,8 @@ competition Competition;
 void pre_auton(void) {
   // Initializing Robot Configuration. DO NOT REMOVE!
   vexcodeInit();
-  
 
+  
 
   // All activities that occur before the competition starts
   // Example: clearing encoders, setting servo positions, ...
@@ -77,15 +117,16 @@ void autonomous(void) {
 
   Brain.Screen.newLine();
   Brain.Screen.print("Starting Autonomous Stuff");
-  
-  //botAi.collectDisk();
+
+
+  // By calling the botAi.iterate() function, we can run through the list of ai behaviors 
 
   bool runBotAuton = true;
   bool iterateCycle;
 
   while(runBotAuton) {
   
-     iterateCycle = botAi.iterate();
+    iterateCycle = botAi.iterate(); // .iterate() returns false if the task failed
 
     if ( not iterateCycle ) {
       // Run error
@@ -100,6 +141,9 @@ void autonomous(void) {
     wait(0.5, seconds);
 
   };
+
+  
+  // Interperet why the loop ended
 
   if ( iterateCycle && not botAi.running) {
     Brain.Screen.newLine();
@@ -124,10 +168,11 @@ void autonomous(void) {
 /*---------------------------------------------------------------------------*/
 
 void usercontrol(void) {
-  // Start Launcher rev code
 
+
+  // Start Launcher rev code
   StartLauncherControl();
-  
+
 }
 
 
@@ -137,26 +182,75 @@ void usercontrol(void) {
 // Once the match is started
 int whenStarted() {
 
+  // Start the motors with 0% velocity
   LauncherGroup.spin(forward);
   LauncherGroup.setVelocity(0.0, percent);
   LauncherFeeder.spin(forward);
   LauncherFeeder.setVelocity(0.0, percent);
   PickerUper.spin(forward);
   PickerUper.setVelocity(0.0, percent);
-  Controller1.Screen.print("Homie Natasha");
+
+
+  fnewmatics.set(false);
+  // ^^ Inside joke in the team 
+
+
+  botAi.init(); // Inits the ai object
+
+
+  // Quality of life feature... 
+  // Controller will notify the user if the battery is under 30%
+  if (Brain.Battery.capacity() <=30) {
+    
+    Controller1.Screen.clearScreen();
+    wait(0.5, seconds);
+    Controller1.rumble("..--..");
+    Controller1.Screen.setCursor(2, 1);
+    Controller1.Screen.print("Low Battery: ");
+    Controller1.Screen.print(Brain.Battery.capacity());
+    wait(5, seconds);
+
+  } else {
+    Controller1.Screen.print("Homie Natasha");
+    //                         ^^ Natalie is our main driver
+    
+  }
   Brain.Screen.print("Homie");
+
+ 
+ // while (botAi.running) {wait(1, seconds);}
+  
+
+  // Loop that controlls the controllers display
   while (true) {
+    
     wait(1.0, seconds);
+
     Controller1.Screen.setCursor(1, 0);
     Controller1.Screen.clearScreen();
-    Controller1.Screen.print("Batt Left");
-    Controller1.Screen.setCursor(1, 12);
-    Controller1.Screen.print(Brain.Battery.capacity() - 20);
-    //Controller1.Screen.newLine();
-    //Controller1.Screen.print(LauncherGroup.temperature(vex::temperatureUnits::celsius));
-    //Controller1.Screen.newLine();
-    //Controller1.Screen.print(LauncherGroup.velocity(vex::rpm));  
-  
+      
+    if (!launchConfirm) { 
+      
+      // Shows the battery left until 20%
+      // In testing, the smart motor's max velocity decreases to 50% at 20% battery capacity
+
+      Controller1.Screen.print("Batt Left");
+      Controller1.Screen.setCursor(1, 12);
+      Controller1.Screen.print(Brain.Battery.capacity() - 20);
+      Controller1.Screen.newLine();
+      Controller1.Screen.newLine();
+      Controller1.Screen.print("^ Extend");
+    
+    } else {
+
+      // Shows this menu when the user presses the up button
+
+      Controller1.Screen.print("Confirm Launch");
+      Controller1.Screen.newLine();
+      Controller1.Screen.newLine();
+      Controller1.Screen.print("< Cancel   Confirm >");
+
+    }
   }
 
 
@@ -164,10 +258,12 @@ int whenStarted() {
 }
 
 
-
-void diskPressed() {
+// Called when the limit switch in the intake is pressed by an entering disk
+void diskPressed() { 
   botAi.diskEntered();
 };
+
+
 
 //
 // Main will set up the competition functions and callbacks.
@@ -199,13 +295,15 @@ int main() {
   Controller1.ButtonR1.released(buttonR1Released);
   Controller1.ButtonL1.released(buttonL1Released);
 
+  Controller1.ButtonUp.pressed(pneumaticPressed);
+
 
 
   // Autonomous Callbacks
 
   DiskLimitSwitch.pressed(diskPressed);
 
-
+  // Start the 
   whenStarted();
 
   // Prevent main from exiting with an infinite loop.

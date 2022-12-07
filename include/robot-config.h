@@ -9,6 +9,8 @@ extern motor_group LauncherGroup;
 extern motor PickerUper;
 extern motor LauncherFeeder;
 extern limit DiskLimitSwitch;
+extern optical Optical;
+extern digital_out fnewmatics;
 
 /**
  * Used to initialize code/tasks/devices added using tools in VEXcode Pro.
