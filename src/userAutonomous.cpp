@@ -25,10 +25,8 @@ void ai::init() {
   Optical.gestureDisable();
 
   
-
-
   if (Brain.SDcard.isInserted()) {
-
+    
     // read sd card and load info
 
     // all config files are written to the sd card through the autonSelector program
@@ -227,12 +225,11 @@ bool ai::changeRoller() {
 
     if (colorSeen == teamColor && Optical.isNearObject() && sawColor && sawOppositeColor) {
       PickerUper.setVelocity(0, percent);
-      
       changeRollers = false;
     }
 
-  //Drivetrain.driveFor(vex::directionType::fwd, 2, vex::distanceUnits::cm);
- // PickerUper.rotateFor(-10, vex::rotationUnits::rev);
+    //Drivetrain.driveFor(vex::directionType::fwd, 2, vex::distanceUnits::cm);
+    // PickerUper.rotateFor(-10, vex::rotationUnits::rev);
 
     Brain.Screen.clearScreen();
     Brain.Screen.setCursor(2, 2);

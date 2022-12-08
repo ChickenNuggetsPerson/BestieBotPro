@@ -70,6 +70,7 @@ void pneumaticPressed( void ) {
     }
 
   }
+
 };
 
 
@@ -169,9 +170,11 @@ void autonomous(void) {
 
 void usercontrol(void) {
 
+  Optical.setLight(vex::ledState::off);
 
   // Start Launcher rev code
   StartLauncherControl();
+  
 
 }
 
@@ -215,6 +218,8 @@ int whenStarted() {
     //                         ^^ Natalie is our main driver
     
   }
+  
+  Brain.Screen.newLine();
   Brain.Screen.print("Homie");
 
  
@@ -238,6 +243,8 @@ int whenStarted() {
       Controller1.Screen.setCursor(1, 12);
       Controller1.Screen.print(Brain.Battery.capacity() - 20);
       Controller1.Screen.newLine();
+      Controller1.Screen.print("Drive Temp: ");
+      Controller1.Screen.print(Drivetrain.temperature(percent));
       Controller1.Screen.newLine();
       Controller1.Screen.print("^ Extend");
     
