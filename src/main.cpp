@@ -15,10 +15,13 @@
 // LauncherGroup        motor_group   14, 15          
 // PickerUper           motor         16              
 // LauncherFeeder       motor         13              
-// DiskLimitSwitch      limit         H               
-// Optical              optical       17              
+// DiskLimitSwitch      limit         B               
 // fnewmatics           digital_out   A               
+// LineLeft             line          G               
+// LineMid              line          F               
+// LineRight            line          H               
 // ---- END VEXCODE CONFIGURED DEVICES ----
+
 
 #include "vex.h"
 
@@ -170,7 +173,6 @@ void autonomous(void) {
 
 void usercontrol(void) {
 
-  Optical.setLight(vex::ledState::off);
 
   // Start Launcher rev code
   StartLauncherControl();
@@ -216,15 +218,9 @@ int whenStarted() {
   } else {
     Controller1.Screen.print("Homie Natasha");
     //                         ^^ Natalie is our main driver
-    
   }
   
-  Brain.Screen.newLine();
-  Brain.Screen.print("Homie");
-
- 
- // while (botAi.running) {wait(1, seconds);}
-  
+  botAi.aiDebug("Homie");
 
   // Loop that controlls the controllers display
   while (true) {
@@ -239,8 +235,8 @@ int whenStarted() {
       // Shows the battery left until 20%
       // In testing, the smart motor's max velocity decreases to 50% at 20% battery capacity
 
-      Controller1.Screen.print("Batt Left");
-      Controller1.Screen.setCursor(1, 12);
+      Controller1.Screen.print("Juice Left: ");
+      //                         ^ Inside joke
       Controller1.Screen.print(Brain.Battery.capacity() - 20);
       Controller1.Screen.newLine();
       Controller1.Screen.print("Drive Temp: ");

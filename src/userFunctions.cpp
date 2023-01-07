@@ -6,7 +6,7 @@ using namespace vex;
 
 // Variables
 float LauncherVel;
-bool RunLauncher = false;
+int RunLauncher = 0;
 int runLauncherFeeder = 0;
 int runMainFeeder = 0;
 
@@ -17,10 +17,8 @@ int runMainFeeder = 0;
 // Rev up and down for the disk launcher
 void StartLauncherControl() {
   //Brain.Screen.print("DEBUG: Starting Rev Code");
-
   
   double maxVel = 100;
-  
 
   while (true) {
     wait(0.05, seconds);
@@ -29,9 +27,9 @@ void StartLauncherControl() {
       maxVel = 50;
     } else { maxVel = 100; };
 
-    if (RunLauncher) {
+    if (RunLauncher == 1) {
       LauncherVel = LauncherVel + 5.0;
-    } else {
+    } else if (RunLauncher == 0 ) {
       LauncherVel = LauncherVel + -5.0;
     }
     if (LauncherVel > maxVel) {
@@ -40,7 +38,12 @@ void StartLauncherControl() {
     if (LauncherVel < 0.0) {
       LauncherVel = 0.0;
     }
-    LauncherGroup.setVelocity(LauncherVel, percent);
+    
+    if (!Controller1.ButtonDown.pressing()) {
+      LauncherGroup.setVelocity(LauncherVel, percent);
+    } else {
+      LauncherGroup.setVelocity(-50, percent);
+    }
 
 
     if (runLauncherFeeder == 0) {
@@ -93,11 +96,11 @@ void buttonL2Released() {
 }
 
 void buttonR2Pressed() {
-  RunLauncher = true;
+  RunLauncher = 1;
 }
 
 void buttonR2Released() {
-  RunLauncher = false;
+  RunLauncher = 0;
   runLauncherFeeder = 0;
 }
 

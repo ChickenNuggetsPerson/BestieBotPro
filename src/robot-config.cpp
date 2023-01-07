@@ -21,9 +21,11 @@ motor LauncherGroupMotorB = motor(PORT15, ratio6_1, false);
 motor_group LauncherGroup = motor_group(LauncherGroupMotorA, LauncherGroupMotorB);
 motor PickerUper = motor(PORT16, ratio18_1, false);
 motor LauncherFeeder = motor(PORT13, ratio36_1, false);
-limit DiskLimitSwitch = limit(Brain.ThreeWirePort.H);
-optical Optical = optical(PORT17);
+limit DiskLimitSwitch = limit(Brain.ThreeWirePort.B);
 digital_out fnewmatics = digital_out(Brain.ThreeWirePort.A);
+line LineLeft = line(Brain.ThreeWirePort.G);
+line LineMid = line(Brain.ThreeWirePort.F);
+line LineRight = line(Brain.ThreeWirePort.H);
 
 // VEXcode generated functions
 // define variable for remote controller enable/disable

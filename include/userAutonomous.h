@@ -15,6 +15,11 @@ class ai {
     bool changeRoller();              // 1
     bool collectDisk();               // 2
     bool stationaryLaunch();          // 3
+    bool rightAdjust();               // 4
+
+    int startPos;
+
+    bool isWhite(float val);
 
     // Private Methods
     bool runTask( int taskNum );

@@ -1,3 +1,5 @@
+
+
 #include "vex.h"
 #include "userAutonomous.h"
 
@@ -6,7 +8,6 @@
 #include "visionConfig.h"
 
 using namespace vex;
-
 
 
 // Constructor method 
@@ -19,10 +20,6 @@ void ai::init() {
 
   Vision.setLedBrightness(0);
   Vision.setSignature(V_DISK);
-
-  Optical.setLight(vex::ledState::on);
-  Optical.setLightPower(100);
-  Optical.gestureDisable();
 
   
   if (Brain.SDcard.isInserted()) {
@@ -37,6 +34,7 @@ void ai::init() {
     
     // reads all the files
     teamColor = readFile("team");
+    startPos = readFile("startpos");
     int rollers = readFile("rollers");
     int launch = readFile("launch");
     int pickup = readFile("pickup");
@@ -44,10 +42,21 @@ void ai::init() {
 
     // Load configs into the personality array
 
-    if (rollers == 1) { personality[0] = 1; }
-    if (pickup == 1) { personality[1] = 2; }
-    if (launch == 1) { personality[2] = 3; }
+    //if (startpos == 1) { personality[0] = 4; }
 
+    if (startPos == 1) {
+      if (rollers == 1) { 
+        personality[1] = 4;
+        personality[2] = 1; 
+      }
+    } else {
+      if (rollers == 1) { personality[1] = 1; }
+    }
+
+    if (pickup == 1) { personality[3] = 2; }
+    if (launch == 1) { personality[4] = 3; }
+
+    
 
 
     // Code for displaying the current config on the brain screen
@@ -58,6 +67,14 @@ void ai::init() {
       Brain.Screen.print("Team: Blue");
     } else {
       Brain.Screen.print("Team: Red");
+    }
+
+    Brain.Screen.newLine();
+
+    if ( startPos == 1 ) {
+      Brain.Screen.print("Start: Right");
+    } else {
+      Brain.Screen.print("Start: Left");
     }
 
     Brain.Screen.newLine();
@@ -184,6 +201,7 @@ bool ai::runTask( int taskNum ) {
   if (personality[taskNum] == 1) { return changeRoller(); };
   if (personality[taskNum] == 2) { return collectDisk(); };
   if (personality[taskNum] == 3) { return stationaryLaunch(); }
+  if (personality[taskNum] == 4) { return rightAdjust(); }
 
   return false; // Gives an error if it can not find the specified behavior
 };
@@ -198,66 +216,158 @@ bool ai::runTask( int taskNum ) {
 // False = The task was not able to be completed for some reason
 
 
-// Uses the color sensor to determine when to stop spinning the roller
+// Adjust for the rollers on the right side
+bool ai::rightAdjust() {
+
+  Brain.Screen.newLine();
+  Brain.Screen.print("Starting Right Adjust");
+
+
+  Drivetrain.setDriveVelocity(50, percent);
+  Drivetrain.setTurnVelocity(17, percent);
+  
+  Drivetrain.drive(vex::directionType::rev);
+  
+  wait(0.2, seconds);
+  
+  Drivetrain.stop(coast);
+  
+  Drivetrain.turn(vex::turnType::left);
+  
+  wait(0.25, seconds);
+
+  Drivetrain.drive(vex::directionType::fwd);
+  wait(1, seconds);
+  Drivetrain.stop(coast);
+  
+
+  wait(1, seconds);
+
+  Drivetrain.stop(coast);
+
+  return true;
+};
+
+// Code that changes the roller
 bool ai::changeRoller() {
 
   Brain.Screen.newLine();
   Brain.Screen.print("Starting Roller Code");
 
   PickerUper.setVelocity(-100, percent);
-  //Drivetrain.driveFor(vex::directionType::fwd, 1, vex::distanceUnits::in);
-  Drivetrain.setDriveVelocity(10, percent);
+  
+  Drivetrain.setDriveVelocity(30, percent);
   Drivetrain.drive(vex::directionType::fwd);
-  
-  bool sawColor = false;
-  bool sawOppositeColor = false;
 
-
-  int colorSeen = 0;
-  bool changeRollers = true;
-  
-  while (changeRollers) {
-
-    if (Optical.hue() > 80) { colorSeen = 1;} else { colorSeen = -1;};
-
-    if (colorSeen != teamColor && Optical.isNearObject()) { sawOppositeColor = true; }
-    if (colorSeen == teamColor && Optical.isNearObject()) { sawColor = true;}
-
-    if (colorSeen == teamColor && Optical.isNearObject() && sawColor && sawOppositeColor) {
-      PickerUper.setVelocity(0, percent);
-      changeRollers = false;
-    }
-
-    //Drivetrain.driveFor(vex::directionType::fwd, 2, vex::distanceUnits::cm);
-    // PickerUper.rotateFor(-10, vex::rotationUnits::rev);
-
-    Brain.Screen.clearScreen();
-    Brain.Screen.setCursor(2, 2);
-    Brain.Screen.print(Optical.hue());
-    Brain.Screen.setCursor(5, 2);
-    Brain.Screen.print(sawColor);
-    Brain.Screen.setCursor(8, 2);
-    Brain.Screen.print(sawOppositeColor);    
-    wait(0.3, seconds);
-  }
+  wait(0.45, seconds);
 
   Drivetrain.stop();
+  PickerUper.setVelocity(0, percent);
 
-  
   return true;
+  
 };
 
+bool ai::isWhite(float val) {
+  if ( val > 50 ) {
+    return true;
+  } else {
+    return false;
+  }
+}
 
 bool ai::stationaryLaunch() {
 
   Brain.Screen.newLine();
   Brain.Screen.print("Starting Launch Code");
 
+  if (startPos == 1) { return false; }
+
+
+  // get in position
+
+  Drivetrain.setTurnVelocity(50, percent);
+
+  Drivetrain.driveFor(vex::directionType::rev, 1, vex::distanceUnits::in);
+  Drivetrain.turn(vex::turnType::left);
+  wait(0.60, seconds);
+  Drivetrain.stop(coast);
+  PickerUper.setVelocity(20, percent);
+  Drivetrain.setDriveVelocity(70, percent);
+  //wait(1, seconds);
+  //Drivetrain.turnFor(-5, vex::rotationUnits::deg);
+  Drivetrain.driveFor(vex::directionType::fwd, 34, vex::distanceUnits::in);
+  PickerUper.setVelocity(0, percent);
+  Drivetrain.turnFor(22, vex::rotationUnits::deg);
+
+
+  
+
+
+  float driveVel = 7;
+
+
+  Drivetrain.setDriveVelocity(40, percent);
+  Drivetrain.driveFor(vex::directionType::rev, 2, vex::distanceUnits::in);
+
+  Drivetrain.setDriveVelocity(10, percent);
+  Drivetrain.setTurnVelocity(9, percent);
+  Drivetrain.drive(vex::directionType::rev);
+
+  PickerUper.setVelocity(100, percent);
+
+  bool notAligned = true;
+
+  while (notAligned) {
+    
+    Brain.Screen.clearScreen();
+    Brain.Screen.setCursor(10, 5);
+    Brain.Screen.print(isWhite(LineRight.reflectivity()));
+    Brain.Screen.setCursor(12, 5);
+    Brain.Screen.print(LineRight.reflectivity());
+    
+    //Brain.Screen.print(isWhite(LineMid.reflectivity()));
+    Brain.Screen.setCursor(10, 15);
+    Brain.Screen.print(isWhite(LineLeft.reflectivity()));
+    Brain.Screen.setCursor(12, 15);
+    Brain.Screen.print(LineLeft.reflectivity());
+    
+
+    if (isWhite(LineRight.reflectivity()) && isWhite(LineLeft.reflectivity())) {
+      notAligned = false;
+    }
+
+    if (isWhite(LineRight.reflectivity()) && !isWhite(LineLeft.reflectivity())) {
+      Drivetrain.setDriveVelocity(0, percent);
+      Drivetrain.turn(turnType::right);
+    }
+
+    if (isWhite(LineLeft.reflectivity()) && !isWhite(LineRight.reflectivity())) {
+      Drivetrain.setDriveVelocity(0, percent);
+      Drivetrain.turn(turnType::left);
+    }
+
+    if (!isWhite(LineLeft.reflectivity()) && !isWhite(LineRight.reflectivity())) {
+      Drivetrain.setDriveVelocity(driveVel, percent);
+      Drivetrain.drive(vex::directionType::rev);
+    }
+  
+    wait(0.1, seconds);
+    
+  }
+
+  
+  Drivetrain.setDriveVelocity(0, percent);
+  PickerUper.setVelocity(0, percent);
+
+
+  
+
   LauncherGroup.setVelocity(100, percent);
   wait(0.5, seconds);
   LauncherFeeder.setVelocity(100, percent);
 
-  wait(5, seconds);
+  wait(7, seconds);
   LauncherGroup.setVelocity(0, percent);
   LauncherFeeder.setVelocity(0, percent);
   
@@ -337,9 +447,9 @@ bool ai::collectDisk() {
       
     }
   }
-  
 
   // check if disk was collected
 
   return true;
 };
+
