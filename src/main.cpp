@@ -37,6 +37,8 @@ ai botAi( 1 ); // Creates the autonomous ai object
 
 
 
+
+
 // Phenumatics launch code
 bool launchConfirm = false;
 
@@ -142,7 +144,7 @@ void autonomous(void) {
       runBotAuton = false;
     }
     
-    wait(0.5, seconds);
+    wait(0.1, seconds);
 
   };
 
@@ -173,6 +175,13 @@ void autonomous(void) {
 
 void usercontrol(void) {
 
+
+  
+  x = 0;
+  y = 0;
+  LauncherFeeder.setVelocity(0, percent);
+  PickerUper.setVelocity(0, percent);
+  LauncherGroup.setVelocity(0, percent);
 
   // Start Launcher rev code
   StartLauncherControl();
@@ -261,12 +270,6 @@ int whenStarted() {
 }
 
 
-// Called when the limit switch in the intake is pressed by an entering disk
-void diskPressed() { 
-  botAi.diskEntered();
-};
-
-
 
 //
 // Main will set up the competition functions and callbacks.
@@ -301,10 +304,6 @@ int main() {
   Controller1.ButtonUp.pressed(pneumaticPressed);
 
 
-
-  // Autonomous Callbacks
-
-  DiskLimitSwitch.pressed(diskPressed);
 
   // Start the 
   whenStarted();

@@ -13,9 +13,7 @@ class ai {
     
     // Behaviors
     bool changeRoller();              // 1
-    bool collectDisk();               // 2
-    bool stationaryLaunch();          // 3
-    bool rightAdjust();               // 4
+
 
     int startPos;
 
@@ -34,8 +32,6 @@ class ai {
     ai( int fallbackColor );
     void init();
 
-    void diskEntered();
-
 
     bool iterate();
 
@@ -44,7 +40,7 @@ class ai {
     void aiError(const char* message);
     void aiDebug(const char* message);
 
-
+    bool replay(const char* pathFile);  
     
     unsigned int readFile(const char* fileName);
     void writeFile(const char* fileName, unsigned int numToWrite);

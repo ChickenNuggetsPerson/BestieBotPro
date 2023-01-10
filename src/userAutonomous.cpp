@@ -15,6 +15,7 @@ ai::ai( int fallbackColor ) {};
 // ^ I had problems with this not running when the object was being constructed
 // so I moved all of its code to the bellow function
 
+
 // Inits sensors and reads all config files
 void ai::init() {
 
@@ -34,33 +35,25 @@ void ai::init() {
     
     // reads all the files
     teamColor = readFile("team");
-    startPos = readFile("startpos");
+    startPos = readFile("startpos"); // 0 = left; 1 = right
     int rollers = readFile("rollers");
     int launch = readFile("launch");
-    int pickup = readFile("pickup");
+    //int pickup = readFile("pickup");
+    int pickup = 0;
 
+    // Config the personality array with the correct behaviors based on the cases
 
-    // Load configs into the personality array
+    if ( rollers == 1 ) { personality[1] = 10; }
 
-    //if (startpos == 1) { personality[0] = 4; }
-
-    if (startPos == 1) {
-      if (rollers == 1) { 
-        personality[1] = 4;
-        personality[2] = 1; 
-      }
+    if ( startPos == 0 ) {
+     if ( launch == 1 ) { personality[2] = 1;}
     } else {
-      if (rollers == 1) { personality[1] = 1; }
+      if ( rollers == 1 ) { personality[0] = 2; personality[2] = 3; }
+      if ( rollers == 1 && launch == 1) { personality[3] = 4; }
     }
-
-    if (pickup == 1) { personality[3] = 2; }
-    if (launch == 1) { personality[4] = 3; }
-
-    
 
 
     // Code for displaying the current config on the brain screen
-    
     Brain.Screen.newLine();
 
     if ( teamColor == 1 ) {
@@ -157,15 +150,6 @@ void ai::aiDebug(const char* message) {
 }
 
 
-// Used to confirming a disk entered the intake
-// I have yet to implement this yet
-void ai::diskEntered() {
-  aiDebug("Limit switch was pressed");
-
-};
-
-
-
 
 // Main internal methods for iterating through the behaviors
 
@@ -198,12 +182,10 @@ bool ai::runTask( int taskNum ) {
 
   // Run the specified behavior
   if (personality[taskNum] == 0) { return true; }; // If 0 is inputed, then it will skip
-  if (personality[taskNum] == 1) { return changeRoller(); };
-  if (personality[taskNum] == 2) { return collectDisk(); };
-  if (personality[taskNum] == 3) { return stationaryLaunch(); }
-  if (personality[taskNum] == 4) { return rightAdjust(); }
-
-  return false; // Gives an error if it can not find the specified behavior
+  if (personality[taskNum] == 10) { return changeRoller(); };
+  
+  return replay(pathNames[personality[taskNum]]);
+  
 };
 
 
@@ -216,37 +198,6 @@ bool ai::runTask( int taskNum ) {
 // False = The task was not able to be completed for some reason
 
 
-// Adjust for the rollers on the right side
-bool ai::rightAdjust() {
-
-  Brain.Screen.newLine();
-  Brain.Screen.print("Starting Right Adjust");
-
-
-  Drivetrain.setDriveVelocity(50, percent);
-  Drivetrain.setTurnVelocity(17, percent);
-  
-  Drivetrain.drive(vex::directionType::rev);
-  
-  wait(0.2, seconds);
-  
-  Drivetrain.stop(coast);
-  
-  Drivetrain.turn(vex::turnType::left);
-  
-  wait(0.25, seconds);
-
-  Drivetrain.drive(vex::directionType::fwd);
-  wait(1, seconds);
-  Drivetrain.stop(coast);
-  
-
-  wait(1, seconds);
-
-  Drivetrain.stop(coast);
-
-  return true;
-};
 
 // Code that changes the roller
 bool ai::changeRoller() {
@@ -268,188 +219,119 @@ bool ai::changeRoller() {
   
 };
 
-bool ai::isWhite(float val) {
-  if ( val > 50 ) {
-    return true;
-  } else {
-    return false;
+
+
+// Code for replaying the autonomous recordings
+
+bool ai::replay( const char* pathFile) {
+  // open the file for reading
+  std::ifstream input_file(pathFile);
+
+  Brain.Screen.setPenColor(vex::color::white);
+
+  bool debug = true;
+
+  // run the program in a loop
+  while (true) {
+    // read a line from the file
+    std::string line;
+    std::getline(input_file, line);
+
+    // check if the end of the file has been reached
+    if (input_file.eof()) {
+      // reset the file stream to the beginning of the file
+      input_file.clear();
+      input_file.seekg(0, std::ios::beg);
+      x = 0;
+      y = 0;
+      return true;
+    }
+
+  
+    // parse the x and y values from the line
+    std::stringstream ss(line);
+
+    unsigned int runlaunch, runlaunchfeed, runmainfeed = 0;
+
+    std::string x_str;
+    std::getline(ss, x_str, ',');
+    std::istringstream xStream(x_str.c_str());
+    xStream >> x;
+
+
+    std::string y_str;
+    std::getline(ss, y_str, ',');
+    std::istringstream yStream(y_str.c_str());
+    yStream >> y;
+
+
+    std::string runlaunch_str;
+    std::getline(ss, runlaunch_str, ',');
+    std::istringstream runlaunchStream(runlaunch_str.c_str());
+    runlaunchStream >> runlaunch;
+
+
+    std::string runlaunchfeed_str;
+    std::getline(ss, runlaunchfeed_str, ',');
+    std::istringstream runlaunchfeedStream(runlaunchfeed_str.c_str());
+    runlaunchfeedStream >> runlaunchfeed;
+
+
+    std::string runmainfeed_str;
+    std::getline(ss, runmainfeed_str, ',');
+    std::istringstream runmainfeedStream(runmainfeed_str.c_str());
+    runmainfeedStream >> runmainfeed;
+
+
+//    RunLauncher = runlaunch;
+//    runLauncherFeeder = runlaunchfeed;
+//    runMainFeeder = runmainfeed;
+
+//    if (!launchControllIsRunning) {
+//      if (RunLauncher == 1) {
+//        LauncherVel = LauncherVel + 5.0;
+//      } else if (RunLauncher == 0 ) {
+//        LauncherVel = LauncherVel + -5.0;
+//      }
+//      if (LauncherVel > 100) {
+//        LauncherVel = 100;
+//      }
+//      if (LauncherVel < 0.0) {
+//        LauncherVel = 0.0;
+//      }
+
+//      LauncherGroup.setVelocity(LauncherVel, percent);
+//      LauncherFeeder.setVelocity(runLauncherFeeder * 100, percent);
+//      PickerUper.setVelocity(runMainFeeder, percent);
+//      
+//    }
+
+
+    if (debug) {
+
+      Brain.Screen.clearScreen();
+      Brain.Screen.setCursor(1, 5);
+      Brain.Screen.print("Left: ");
+      Brain.Screen.print(x);
+      Brain.Screen.setCursor(1, 17);
+      Brain.Screen.print("Right: ");
+      Brain.Screen.print(y);  
+      Brain.Screen.setCursor(2, 5);
+      Brain.Screen.print("RunLaunch: ");
+      Brain.Screen.print(runlaunch); 
+      Brain.Screen.setCursor(3, 5);
+      Brain.Screen.print("RunLaunchFeed: ");
+      Brain.Screen.print(runlaunchfeed); 
+      Brain.Screen.setCursor(4, 5);
+      Brain.Screen.print("RunMainFeed: ");
+      Brain.Screen.print(runmainfeed); 
+
+    }
+
+
+
+    // sleep for a short time to give the processor a break
+    vex::task::sleep(10);
   }
+
 }
-
-bool ai::stationaryLaunch() {
-
-  Brain.Screen.newLine();
-  Brain.Screen.print("Starting Launch Code");
-
-  if (startPos == 1) { return false; }
-
-
-  // get in position
-
-  Drivetrain.setTurnVelocity(50, percent);
-
-  Drivetrain.driveFor(vex::directionType::rev, 1, vex::distanceUnits::in);
-  Drivetrain.turn(vex::turnType::left);
-  wait(0.60, seconds);
-  Drivetrain.stop(coast);
-  PickerUper.setVelocity(20, percent);
-  Drivetrain.setDriveVelocity(70, percent);
-  //wait(1, seconds);
-  //Drivetrain.turnFor(-5, vex::rotationUnits::deg);
-  Drivetrain.driveFor(vex::directionType::fwd, 34, vex::distanceUnits::in);
-  PickerUper.setVelocity(0, percent);
-  Drivetrain.turnFor(22, vex::rotationUnits::deg);
-
-
-  
-
-
-  float driveVel = 7;
-
-
-  Drivetrain.setDriveVelocity(40, percent);
-  Drivetrain.driveFor(vex::directionType::rev, 2, vex::distanceUnits::in);
-
-  Drivetrain.setDriveVelocity(10, percent);
-  Drivetrain.setTurnVelocity(9, percent);
-  Drivetrain.drive(vex::directionType::rev);
-
-  PickerUper.setVelocity(100, percent);
-
-  bool notAligned = true;
-
-  while (notAligned) {
-    
-    Brain.Screen.clearScreen();
-    Brain.Screen.setCursor(10, 5);
-    Brain.Screen.print(isWhite(LineRight.reflectivity()));
-    Brain.Screen.setCursor(12, 5);
-    Brain.Screen.print(LineRight.reflectivity());
-    
-    //Brain.Screen.print(isWhite(LineMid.reflectivity()));
-    Brain.Screen.setCursor(10, 15);
-    Brain.Screen.print(isWhite(LineLeft.reflectivity()));
-    Brain.Screen.setCursor(12, 15);
-    Brain.Screen.print(LineLeft.reflectivity());
-    
-
-    if (isWhite(LineRight.reflectivity()) && isWhite(LineLeft.reflectivity())) {
-      notAligned = false;
-    }
-
-    if (isWhite(LineRight.reflectivity()) && !isWhite(LineLeft.reflectivity())) {
-      Drivetrain.setDriveVelocity(0, percent);
-      Drivetrain.turn(turnType::right);
-    }
-
-    if (isWhite(LineLeft.reflectivity()) && !isWhite(LineRight.reflectivity())) {
-      Drivetrain.setDriveVelocity(0, percent);
-      Drivetrain.turn(turnType::left);
-    }
-
-    if (!isWhite(LineLeft.reflectivity()) && !isWhite(LineRight.reflectivity())) {
-      Drivetrain.setDriveVelocity(driveVel, percent);
-      Drivetrain.drive(vex::directionType::rev);
-    }
-  
-    wait(0.1, seconds);
-    
-  }
-
-  
-  Drivetrain.setDriveVelocity(0, percent);
-  PickerUper.setVelocity(0, percent);
-
-
-  
-
-  LauncherGroup.setVelocity(100, percent);
-  wait(0.5, seconds);
-  LauncherFeeder.setVelocity(100, percent);
-
-  wait(7, seconds);
-  LauncherGroup.setVelocity(0, percent);
-  LauncherFeeder.setVelocity(0, percent);
-  
-  return true;
-};
-
-
-
-// Uses the vision sensor on the front of the robot to pickup a disk
-// Works like 60% of the time
-// If there is a clump of disks together, then it can not differentiate them
-bool ai::collectDisk() {
-
-  Brain.Screen.newLine();
-  Brain.Screen.print("Starting Collect Disk");
-  
-  return true;
-  
-  int screen_middle_x = 316 / 2;
-  bool collected = false;
-  bool aligned = false;
-
-
-
-  while (not collected) {
-    Vision.takeSnapshot(V_DISK);
-    if (Vision.objectCount > 0) {
-
-      Brain.Screen.newLine();
-      Brain.Screen.print(Vision.largestObject.centerY);
-
-      Drivetrain.setDriveVelocity(10, percent);
-      Drivetrain.setTurnVelocity(10, percent);
-      Drivetrain.drive(forward);
-
-      if (Vision.largestObject.centerX < screen_middle_x - 5) {
-        // on the left
-        Drivetrain.turn(turnType::left);
-        aligned = false;
-      } else if (Vision.largestObject.centerX > screen_middle_x + 5) {
-        // on the right
-        Drivetrain.turn(turnType::right);
-        aligned = false;
-      } else {
-        // is in the center
-        
-        aligned = true;
-        Drivetrain.stop(coast);
-        Drivetrain.driveFor(forward, 4, inches);
-
-      }
-    } else {
-
-      if (aligned) {
-        PickerUper.setVelocity(100, percent);
-        Drivetrain.setDriveVelocity(50, percent);
-        Drivetrain.driveFor(forward, 10, inches);
-
-        Drivetrain.setDriveVelocity(100, percent);
-        Drivetrain.driveFor(forward, 10, inches);
-
-        LauncherGroup.setVelocity(100, percent);
-        LauncherFeeder.setVelocity(100, percent);
-
-        wait(20, seconds);
-
-        LauncherFeeder.setVelocity(0, percent);
-        LauncherGroup.setVelocity(0, percent);
-        PickerUper.setVelocity(0, percent);
-        
-        aligned = false;
-
-      } else {
-        // saw nothing
-        Drivetrain.stop();
-      }
-      
-    }
-  }
-
-  // check if disk was collected
-
-  return true;
-};
-

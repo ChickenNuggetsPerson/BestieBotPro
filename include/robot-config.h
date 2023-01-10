@@ -14,6 +14,11 @@ extern line LineLeft;
 extern line LineMid;
 extern line LineRight;
 
+
+extern unsigned int x, y;
+extern const char* pathNames[4];
+
+
 /**
  * Used to initialize code/tasks/devices added using tools in VEXcode Pro.
  * 
