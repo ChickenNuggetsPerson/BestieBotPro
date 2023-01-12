@@ -11,7 +11,6 @@ int runLauncherFeeder = 0;
 int runMainFeeder = 0;
 
 
-
 // User Functions
 
 // Rev up and down for the disk launcher

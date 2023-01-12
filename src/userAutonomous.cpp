@@ -1,5 +1,4 @@
 
-
 #include "vex.h"
 #include "userAutonomous.h"
 
@@ -21,7 +20,6 @@ void ai::init() {
 
   Vision.setLedBrightness(0);
   Vision.setSignature(V_DISK);
-
   
   if (Brain.SDcard.isInserted()) {
     
@@ -48,10 +46,9 @@ void ai::init() {
     if ( startPos == 0 ) {
      if ( launch == 1 ) { personality[2] = 1;}
     } else {
-      if ( rollers == 1 ) { personality[0] = 2; personality[2] = 3; }
-      if ( rollers == 1 && launch == 1) { personality[3] = 4; }
+      if ( rollers == 1 ) { personality[0] = 2;  }
+      if ( rollers == 1 && launch == 1) { personality[3] = 3; }
     }
-
 
     // Code for displaying the current config on the brain screen
     Brain.Screen.newLine();
@@ -150,15 +147,12 @@ void ai::aiDebug(const char* message) {
 }
 
 
-
 // Main internal methods for iterating through the behaviors
 
 // Called every time the robot wants to advance to the next behavior defined in the personality
 bool ai::iterate() {
 
-  //aiDebug("Iterating");
-
-  currentTask = currentTask + 1; 
+  currentTask = currentTask + 1;
 
   if (currentTask >= personalitySize) {
 
@@ -183,8 +177,9 @@ bool ai::runTask( int taskNum ) {
   // Run the specified behavior
   if (personality[taskNum] == 0) { return true; }; // If 0 is inputed, then it will skip
   if (personality[taskNum] == 10) { return changeRoller(); };
+  if (personality[taskNum] > 0 && personality[taskNum] < 10) { return replay(pathNames[personality[taskNum]]); }
   
-  return replay(pathNames[personality[taskNum]]);
+  return false;
   
 };
 
@@ -229,10 +224,16 @@ bool ai::replay( const char* pathFile) {
 
   Brain.Screen.setPenColor(vex::color::white);
 
-  bool debug = true;
+  int launchVel = 0;
+
+  bool debug = false;
+  bool isRunning = true;
 
   // run the program in a loop
-  while (true) {
+  while (isRunning) {
+
+    double startTime = Brain.timer(vex::timeUnits::msec);
+
     // read a line from the file
     std::string line;
     std::getline(input_file, line);
@@ -244,7 +245,7 @@ bool ai::replay( const char* pathFile) {
       input_file.seekg(0, std::ios::beg);
       x = 0;
       y = 0;
-      return true;
+      isRunning = false;
     }
 
   
@@ -258,54 +259,41 @@ bool ai::replay( const char* pathFile) {
     std::istringstream xStream(x_str.c_str());
     xStream >> x;
 
-
     std::string y_str;
     std::getline(ss, y_str, ',');
     std::istringstream yStream(y_str.c_str());
     yStream >> y;
-
 
     std::string runlaunch_str;
     std::getline(ss, runlaunch_str, ',');
     std::istringstream runlaunchStream(runlaunch_str.c_str());
     runlaunchStream >> runlaunch;
 
-
     std::string runlaunchfeed_str;
     std::getline(ss, runlaunchfeed_str, ',');
     std::istringstream runlaunchfeedStream(runlaunchfeed_str.c_str());
     runlaunchfeedStream >> runlaunchfeed;
-
 
     std::string runmainfeed_str;
     std::getline(ss, runmainfeed_str, ',');
     std::istringstream runmainfeedStream(runmainfeed_str.c_str());
     runmainfeedStream >> runmainfeed;
 
+    if (runlaunch == 1) {
+      launchVel = launchVel + 5.0;
+    } else if (runlaunch == 0 ) {
+      launchVel = launchVel + -5.0;
+    }
+    if (launchVel > 100) {
+      launchVel = 100;
+    }
+    if (launchVel < 0.0) {
+      launchVel = 0.0;
+    }
 
-//    RunLauncher = runlaunch;
-//    runLauncherFeeder = runlaunchfeed;
-//    runMainFeeder = runmainfeed;
-
-//    if (!launchControllIsRunning) {
-//      if (RunLauncher == 1) {
-//        LauncherVel = LauncherVel + 5.0;
-//      } else if (RunLauncher == 0 ) {
-//        LauncherVel = LauncherVel + -5.0;
-//      }
-//      if (LauncherVel > 100) {
-//        LauncherVel = 100;
-//      }
-//      if (LauncherVel < 0.0) {
-//        LauncherVel = 0.0;
-//      }
-
-//      LauncherGroup.setVelocity(LauncherVel, percent);
-//      LauncherFeeder.setVelocity(runLauncherFeeder * 100, percent);
-//      PickerUper.setVelocity(runMainFeeder, percent);
-//      
-//    }
-
+    LauncherGroup.setVelocity(launchVel, percent);
+    LauncherFeeder.setVelocity(runlaunchfeed * 100, percent);
+    PickerUper.setVelocity(runmainfeed, percent);
 
     if (debug) {
 
@@ -328,10 +316,14 @@ bool ai::replay( const char* pathFile) {
 
     }
 
+    // Figure out the delta time
 
+    double endTime = Brain.timer(vex::timeUnits::msec);
+    double deltaTime = endTime - startTime;
 
-    // sleep for a short time to give the processor a break
-    vex::task::sleep(10);
+    vex::task::sleep(20 - deltaTime);
   }
+
+  return true;
 
 }

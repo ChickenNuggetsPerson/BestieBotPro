@@ -26,6 +26,15 @@ class ai {
     int teamColor = 0;
     int currentTask = -1;
 
+
+
+    const char* pathNames[4] = {
+      "Paths/Skills/main.txt",
+      "Paths/Left/Launch.txt",
+      "Paths/Right/GoToRoller.txt",
+      "Paths/Right/RollerToMid.txt"
+    };
+
   public:
     
     // Methods

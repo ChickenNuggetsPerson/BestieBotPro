@@ -23,19 +23,9 @@ motor PickerUper = motor(PORT16, ratio18_1, false);
 motor LauncherFeeder = motor(PORT13, ratio36_1, false);
 limit DiskLimitSwitch = limit(Brain.ThreeWirePort.B);
 digital_out fnewmatics = digital_out(Brain.ThreeWirePort.A);
-line LineLeft = line(Brain.ThreeWirePort.G);
-line LineMid = line(Brain.ThreeWirePort.F);
-line LineRight = line(Brain.ThreeWirePort.H);
-
+digital_out fnewmaticsB = digital_out(Brain.ThreeWirePort.B);
 
 unsigned int x, y = 0;
-const char* pathNames[4] = {
-  "Paths/Left/ToMiddle.txt",
-  "Paths/Left/Launch.txt",
-  "Paths/Right/GoToRoller.txt",
-  "Paths/Right/RollerToMid.txt"
-};
-
 
 
 // VEXcode generated functions

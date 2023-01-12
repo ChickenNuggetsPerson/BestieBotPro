@@ -37,8 +37,6 @@ ai botAi( 1 ); // Creates the autonomous ai object
 
 
 
-
-
 // Phenumatics launch code
 bool launchConfirm = false;
 
@@ -66,12 +64,14 @@ void pneumaticPressed( void ) {
       botAi.aiDebug("Launching");
 
       fnewmatics.set(true);
+      fnewmaticsB.set(true);
 
       confirm = false;
       launchConfirm = false;
 
       wait(2, seconds);
       fnewmatics.set(false);
+      fnewmaticsB.set(false);
     }
 
   }
@@ -175,8 +175,6 @@ void autonomous(void) {
 
 void usercontrol(void) {
 
-
-  
   x = 0;
   y = 0;
   LauncherFeeder.setVelocity(0, percent);
@@ -186,7 +184,6 @@ void usercontrol(void) {
   // Start Launcher rev code
   StartLauncherControl();
   
-
 }
 
 
@@ -206,6 +203,8 @@ int whenStarted() {
 
 
   fnewmatics.set(false);
+  fnewmaticsB.set(false);
+  
   // ^^ Inside joke in the team 
 
 
@@ -304,8 +303,7 @@ int main() {
   Controller1.ButtonUp.pressed(pneumaticPressed);
 
 
-
-  // Start the 
+  // Start the main loop
   whenStarted();
 
   // Prevent main from exiting with an infinite loop.
