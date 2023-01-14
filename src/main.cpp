@@ -32,7 +32,6 @@
 using namespace vex;
 
 
-
 ai botAi( 1 ); // Creates the autonomous ai object
 
 
@@ -224,6 +223,7 @@ int whenStarted() {
     wait(5, seconds);
 
   } else {
+    Controller1.Screen.newLine();
     Controller1.Screen.print("Homie Natasha");
     //                         ^^ Natalie is our main driver
   }
@@ -301,6 +301,25 @@ int main() {
   Controller1.ButtonL1.released(buttonL1Released);
 
   Controller1.ButtonUp.pressed(pneumaticPressed);
+
+
+  Controller1.Screen.clearScreen();
+  Controller1.Screen.setCursor(1, 0);
+  Controller1.Screen.print("Left - Normal");
+  Controller1.Screen.setCursor(2, 0);
+  Controller1.Screen.print("Right - Skills");
+
+  bool menu = false;
+  while (menu) {
+    if ( Controller1.ButtonLeft.pressing() ) {
+      botAi.skillsCheck = false;
+      menu = false;
+    }
+    if ( Controller1.ButtonRight.pressing()) {
+      botAi.skillsCheck = true;
+      menu = false;
+    }
+  }
 
 
   // Start the main loop

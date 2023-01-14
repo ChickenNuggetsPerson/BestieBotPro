@@ -41,13 +41,21 @@ void ai::init() {
 
     // Config the personality array with the correct behaviors based on the cases
 
-    if ( rollers == 1 ) { personality[1] = 10; }
+    if ( !skillsCheck ) {
 
-    if ( startPos == 0 ) {
-     if ( launch == 1 ) { personality[2] = 1;}
+      if ( rollers == 1 ) { personality[1] = 10; }
+
+      if ( startPos == 0 ) {
+       if ( launch == 1 ) { personality[2] = 1;}
+      } else {
+        if ( rollers == 1 ) { personality[0] = 2;  }
+        if ( rollers == 1 && launch == 1) { personality[3] = 3; }
+      }
+
     } else {
-      if ( rollers == 1 ) { personality[0] = 2;  }
-      if ( rollers == 1 && launch == 1) { personality[3] = 3; }
+      personality[1] = 10;
+      personality[2] = 12;
+      personality[3] = 11;
     }
 
     // Code for displaying the current config on the brain screen
@@ -177,7 +185,9 @@ bool ai::runTask( int taskNum ) {
   // Run the specified behavior
   if (personality[taskNum] == 0) { return true; }; // If 0 is inputed, then it will skip
   if (personality[taskNum] == 10) { return changeRoller(); };
-  if (personality[taskNum] > 0 && personality[taskNum] < 10) { return replay(pathNames[personality[taskNum]]); }
+  if (personality[taskNum] == 11) { return expand();}
+  if (personality[taskNum] == 12) {return replay(pathNames[0]); }
+  if (personality[taskNum] >= 0 && personality[taskNum] < 10) { return replay(pathNames[personality[taskNum]]); }
   
   return false;
   
@@ -215,6 +225,22 @@ bool ai::changeRoller() {
 };
 
 
+// Extend 
+bool ai::expand() {
+
+  aiDebug("Expanding");
+
+  fnewmatics.set(true);
+  fnewmaticsB.set(true);
+
+  wait(2, seconds);
+  fnewmatics.set(false);
+  fnewmaticsB.set(false);
+  
+  return true;
+}
+
+
 
 // Code for replaying the autonomous recordings
 
@@ -223,16 +249,27 @@ bool ai::replay( const char* pathFile) {
   std::ifstream input_file(pathFile);
 
   Brain.Screen.setPenColor(vex::color::white);
-
+  
   int launchVel = 0;
+  
+  RightDriveSmart.resetPosition();
+  LeftDriveSmart.resetPosition();
 
-  bool debug = false;
-  bool isRunning = true;
+  //double lastLeftPos = LeftDriveSmart.position(vex::rotationUnits::rev);
+  //double lastRightPos = RightDriveSmart.position(vex::rotationUnits::rev);
 
-  // run the program in a loop
-  while (isRunning) {
+  double readDeltaTime = 0;
+  double deltaTime;
+
+  bool debug = true;
+
+  while (true) {
 
     double startTime = Brain.timer(vex::timeUnits::msec);
+
+
+    //if ( LeftDriveSmart.position(vex::rotationUnits::rev) != lastLeftPos ) { LeftDriveSmart.rotateTo(lastLeftPos, vex::rotationUnits::rev); }
+    //if ( RightDriveSmart.position(vex::rotationUnits::rev) != lastRightPos ) { RightDriveSmart.rotateTo(lastRightPos, vex::rotationUnits::rev); }
 
     // read a line from the file
     std::string line;
@@ -245,39 +282,68 @@ bool ai::replay( const char* pathFile) {
       input_file.seekg(0, std::ios::beg);
       x = 0;
       y = 0;
-      isRunning = false;
+
+      //wait(10, seconds);
+      return true;
     }
 
   
-    // parse the x and y values from the line
+    // parse the values from the line
     std::stringstream ss(line);
 
     unsigned int runlaunch, runlaunchfeed, runmainfeed = 0;
+    double leftPos, rightPos = 0;
 
     std::string x_str;
     std::getline(ss, x_str, ',');
     std::istringstream xStream(x_str.c_str());
     xStream >> x;
 
+
     std::string y_str;
     std::getline(ss, y_str, ',');
     std::istringstream yStream(y_str.c_str());
     yStream >> y;
+
 
     std::string runlaunch_str;
     std::getline(ss, runlaunch_str, ',');
     std::istringstream runlaunchStream(runlaunch_str.c_str());
     runlaunchStream >> runlaunch;
 
+
     std::string runlaunchfeed_str;
     std::getline(ss, runlaunchfeed_str, ',');
     std::istringstream runlaunchfeedStream(runlaunchfeed_str.c_str());
     runlaunchfeedStream >> runlaunchfeed;
 
+
     std::string runmainfeed_str;
     std::getline(ss, runmainfeed_str, ',');
     std::istringstream runmainfeedStream(runmainfeed_str.c_str());
     runmainfeedStream >> runmainfeed;
+
+
+    std::string leftPos_str;
+    std::getline(ss, leftPos_str, ',');
+    std::istringstream LeftPosStream(leftPos_str.c_str());
+    LeftPosStream >> leftPos;
+
+
+    std::string rightPos_str;
+    std::getline(ss, rightPos_str, ',');
+    std::istringstream rightPosStream(rightPos_str.c_str());
+    rightPosStream >> rightPos;
+
+    
+
+    std::string readDeltaTime_str;
+    std::getline(ss, readDeltaTime_str, ',');
+    std::istringstream readDeltaTimeStream(readDeltaTime_str.c_str());
+    readDeltaTimeStream >> readDeltaTime;
+
+
+
 
     if (runlaunch == 1) {
       launchVel = launchVel + 5.0;
@@ -312,18 +378,40 @@ bool ai::replay( const char* pathFile) {
       Brain.Screen.print(runlaunchfeed); 
       Brain.Screen.setCursor(4, 5);
       Brain.Screen.print("RunMainFeed: ");
-      Brain.Screen.print(runmainfeed); 
+      Brain.Screen.print(runmainfeed);
+
+      Brain.Screen.setCursor(5, 5);
+      Brain.Screen.print("Delata: ");
+      Brain.Screen.print(readDeltaTime);
+      Brain.Screen.print("   ");
+      Brain.Screen.print(deltaTime);
+      Brain.Screen.print("   ");
+      Brain.Screen.print(readDeltaTime - deltaTime);
+
+      Brain.Screen.setCursor(6, 5);
+      Brain.Screen.print("Lancher Vel: ");
+      //Brain.Screen.print(LauncherVel);    
+ 
+      Brain.Screen.setCursor(8, 5);
+      Brain.Screen.print("ReadLeftPos: ");
+      Brain.Screen.print(leftPos);    
+
+      Brain.Screen.setCursor(9, 5);
+      Brain.Screen.print("ActualLeftPos: ");
+      Brain.Screen.print(LeftDriveSmart.position(vex::rotationUnits::rev));    
 
     }
 
-    // Figure out the delta time
-
     double endTime = Brain.timer(vex::timeUnits::msec);
-    double deltaTime = endTime - startTime;
+    deltaTime = endTime - startTime;
 
-    vex::task::sleep(20 - deltaTime);
+    Brain.Screen.setCursor(7, 5);
+    Brain.Screen.print(readDeltaTime - deltaTime);
+
+    vex::task::sleep(fabs(readDeltaTime - deltaTime));
+
+    //lastLeftPos = LeftDriveSmart.position(vex::rotationUnits::rev);
+    //lastRightPos = RightDriveSmart.position(vex::rotationUnits::rev);
   }
 
-  return true;
-
-}
+};

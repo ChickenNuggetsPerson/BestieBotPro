@@ -12,7 +12,8 @@ class ai {
     int personalitySize = 10;
     
     // Behaviors
-    bool changeRoller();              // 1
+    bool changeRoller();              // 10
+    bool expand();                    // 11
 
 
     int startPos;
@@ -41,7 +42,8 @@ class ai {
     ai( int fallbackColor );
     void init();
 
-
+    bool skillsCheck = false;
+    
     bool iterate();
 
     bool running = true;

@@ -12,6 +12,9 @@ extern limit DiskLimitSwitch;
 extern digital_out fnewmatics;
 extern digital_out fnewmaticsB;
 
+extern motor_group RightDriveSmart;
+extern motor_group LeftDriveSmart;
+
 extern unsigned int x, y;
 
 
