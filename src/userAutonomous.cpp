@@ -34,6 +34,7 @@ void ai::init() {
     // reads all the files
     teamColor = readFile("team");
     startPos = readFile("startpos"); // 0 = left; 1 = right
+    int skills = readFile("skills");
     int rollers = readFile("rollers");
     int launch = readFile("launch");
     //int pickup = readFile("pickup");
@@ -41,7 +42,14 @@ void ai::init() {
 
     // Config the personality array with the correct behaviors based on the cases
 
-    if ( !skillsCheck ) {
+
+    // Special Behaviors
+    //  - Rollers    - 10
+    //  - Expand     - 11
+    //  - Run Path 0 - 12   This is so the program can distinct between path 0 and an empty personality array 
+
+
+    if ( skills == 0 ) {
 
       if ( rollers == 1 ) { personality[1] = 10; }
 
@@ -53,9 +61,10 @@ void ai::init() {
       }
 
     } else {
-      personality[1] = 10;
+      personality[1] = 13;
       personality[2] = 12;
       personality[3] = 11;
+
     }
 
     // Code for displaying the current config on the brain screen
@@ -184,9 +193,10 @@ bool ai::runTask( int taskNum ) {
 
   // Run the specified behavior
   if (personality[taskNum] == 0) { return true; }; // If 0 is inputed, then it will skip
-  if (personality[taskNum] == 10) { return changeRoller(); };
+  if (personality[taskNum] == 10) { return changeRoller( false ); };
   if (personality[taskNum] == 11) { return expand();}
   if (personality[taskNum] == 12) {return replay(pathNames[0]); }
+  if (personality[taskNum] == 13) { return changeRoller( true ); };
   if (personality[taskNum] >= 0 && personality[taskNum] < 10) { return replay(pathNames[personality[taskNum]]); }
   
   return false;
@@ -205,17 +215,27 @@ bool ai::runTask( int taskNum ) {
 
 
 // Code that changes the roller
-bool ai::changeRoller() {
+bool ai::changeRoller( bool longer ) {
 
   Brain.Screen.newLine();
   Brain.Screen.print("Starting Roller Code");
 
-  PickerUper.setVelocity(-100, percent);
-  
+  if ( longer ) {
+    PickerUper.setVelocity(100, percent);
+  } else {
+    PickerUper.setVelocity(-100, percent);
+  }
+
+
   Drivetrain.setDriveVelocity(30, percent);
   Drivetrain.drive(vex::directionType::fwd);
 
-  wait(0.45, seconds);
+  if ( longer ) {
+    wait(0.45 * 2, seconds);
+  } else {
+    wait(0.45, seconds);
+  }
+  
 
   Drivetrain.stop();
   PickerUper.setVelocity(0, percent);

@@ -302,26 +302,6 @@ int main() {
 
   Controller1.ButtonUp.pressed(pneumaticPressed);
 
-
-  Controller1.Screen.clearScreen();
-  Controller1.Screen.setCursor(1, 0);
-  Controller1.Screen.print("Left - Normal");
-  Controller1.Screen.setCursor(2, 0);
-  Controller1.Screen.print("Right - Skills");
-
-  bool menu = false;
-  while (menu) {
-    if ( Controller1.ButtonLeft.pressing() ) {
-      botAi.skillsCheck = false;
-      menu = false;
-    }
-    if ( Controller1.ButtonRight.pressing()) {
-      botAi.skillsCheck = true;
-      menu = false;
-    }
-  }
-
-
   // Start the main loop
   whenStarted();
 
