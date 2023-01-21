@@ -27,6 +27,19 @@ void ai::init() {
 
     // all config files are written to the sd card through the autonSelector program
 
+
+    aiDebug("Loading Driving Config");
+    
+    andrewDriving = readFile("andrewDriving");
+    
+    Brain.Screen.newLine();
+
+    if ( andrewDriving == 1 ) {
+      Brain.Screen.print("Loaded Andrew Driving Config");
+    } else {
+      Brain.Screen.print("Loading Alt Driving Config");      
+    }
+
     aiDebug("Loading Auton Config: ");
 
     // all configs are stored as int values
@@ -69,43 +82,47 @@ void ai::init() {
 
     // Code for displaying the current config on the brain screen
     Brain.Screen.newLine();
+    if (skills != 1) {
+      if ( teamColor == 1 ) {
+        Brain.Screen.print("Team: Blue");
+      } else {
+        Brain.Screen.print("Team: Red");
+      }
 
-    if ( teamColor == 1 ) {
-      Brain.Screen.print("Team: Blue");
+      Brain.Screen.newLine();
+
+      if ( startPos == 1 ) {
+        Brain.Screen.print("Start: Right");
+      } else {
+        Brain.Screen.print("Start: Left");
+      }
+
+      Brain.Screen.newLine();
+
+      if ( rollers == 1 ) {
+        Brain.Screen.print("Rollers: True");
+      } else {
+        Brain.Screen.print("Rollers: False");
+      }
+
+      Brain.Screen.newLine();
+
+      if ( launch == 1 ) {
+        Brain.Screen.print("Launch: True");
+      } else {
+        Brain.Screen.print("Launch: False");
+      }
+
+      Brain.Screen.newLine();
+
+      if ( pickup == 1 ) {
+        Brain.Screen.print("Pickup: True");
+      } else {
+        Brain.Screen.print("Pickup: False");
+      }
     } else {
-      Brain.Screen.print("Team: Red");
-    }
-
-    Brain.Screen.newLine();
-
-    if ( startPos == 1 ) {
-      Brain.Screen.print("Start: Right");
-    } else {
-      Brain.Screen.print("Start: Left");
-    }
-
-    Brain.Screen.newLine();
-
-    if ( rollers == 1 ) {
-      Brain.Screen.print("Rollers: True");
-    } else {
-      Brain.Screen.print("Rollers: False");
-    }
-
-    Brain.Screen.newLine();
-
-    if ( launch == 1 ) {
-      Brain.Screen.print("Launch: True");
-    } else {
-      Brain.Screen.print("Launch: False");
-    }
-
-    Brain.Screen.newLine();
-
-    if ( pickup == 1 ) {
-      Brain.Screen.print("Pickup: True");
-    } else {
-      Brain.Screen.print("Pickup: False");
+      aiError("Running Skills");
+      Brain.Screen.newLine();
     }
 
   } else {
@@ -227,7 +244,7 @@ bool ai::changeRoller( bool longer ) {
   }
 
 
-  Drivetrain.setDriveVelocity(30, percent);
+  setVel(30);
   Drivetrain.drive(vex::directionType::fwd);
 
   if ( longer ) {
@@ -237,7 +254,7 @@ bool ai::changeRoller( bool longer ) {
   }
   
 
-  Drivetrain.stop();
+  setVel(0);
   PickerUper.setVelocity(0, percent);
 
   return true;
@@ -261,22 +278,31 @@ bool ai::expand() {
 }
 
 
+bool ai::setVel(int vel) {
+  motorFL = vel;
+  motorFR = vel;
+  motorBL = vel;
+  motorBR = vel;
+  return true;
+
+}
+
 
 // Code for replaying the autonomous recordings
 
 bool ai::replay( const char* pathFile) {
+
+  motorFL = 0;
+  motorFR = 0;
+  motorBL = 0;
+  motorBR = 0;
+
   // open the file for reading
   std::ifstream input_file(pathFile);
 
   Brain.Screen.setPenColor(vex::color::white);
   
   int launchVel = 0;
-  
-  RightDriveSmart.resetPosition();
-  LeftDriveSmart.resetPosition();
-
-  //double lastLeftPos = LeftDriveSmart.position(vex::rotationUnits::rev);
-  //double lastRightPos = RightDriveSmart.position(vex::rotationUnits::rev);
 
   double readDeltaTime = 0;
   double deltaTime;
@@ -300,8 +326,11 @@ bool ai::replay( const char* pathFile) {
       // reset the file stream to the beginning of the file
       input_file.clear();
       input_file.seekg(0, std::ios::beg);
-      x = 0;
-      y = 0;
+
+      motorFL = 0;
+      motorFR = 0;
+      motorBL = 0;
+      motorBR = 0;
 
       //wait(10, seconds);
       return true;
@@ -311,20 +340,31 @@ bool ai::replay( const char* pathFile) {
     // parse the values from the line
     std::stringstream ss(line);
 
-    unsigned int runlaunch, runlaunchfeed, runmainfeed = 0;
-    double leftPos, rightPos = 0;
+    unsigned int runlaunch, runlaunchfeed, runmainfeed, fr, br, fl, bl = 0;
 
-    std::string x_str;
-    std::getline(ss, x_str, ',');
-    std::istringstream xStream(x_str.c_str());
-    xStream >> x;
+    std::string fr_str;
+    std::getline(ss, fr_str, ',');
+    std::istringstream frStream(fr_str.c_str());
+    frStream >> fr;
+    motorFR = fr;
 
+    std::string fl_str;
+    std::getline(ss, fl_str, ',');
+    std::istringstream flStream(fl_str.c_str());
+    flStream >> fl;
+    motorFL = fl;
 
-    std::string y_str;
-    std::getline(ss, y_str, ',');
-    std::istringstream yStream(y_str.c_str());
-    yStream >> y;
+    std::string br_str;
+    std::getline(ss, br_str, ',');
+    std::istringstream brStream(br_str.c_str());
+    brStream >> br;
+    motorBR = br;
 
+    std::string bl_str;
+    std::getline(ss, bl_str, ',');
+    std::istringstream blStream(bl_str.c_str());
+    blStream >> bl;
+    motorBL = bl;
 
     std::string runlaunch_str;
     std::getline(ss, runlaunch_str, ',');
@@ -342,19 +382,6 @@ bool ai::replay( const char* pathFile) {
     std::getline(ss, runmainfeed_str, ',');
     std::istringstream runmainfeedStream(runmainfeed_str.c_str());
     runmainfeedStream >> runmainfeed;
-
-
-    std::string leftPos_str;
-    std::getline(ss, leftPos_str, ',');
-    std::istringstream LeftPosStream(leftPos_str.c_str());
-    LeftPosStream >> leftPos;
-
-
-    std::string rightPos_str;
-    std::getline(ss, rightPos_str, ',');
-    std::istringstream rightPosStream(rightPos_str.c_str());
-    rightPosStream >> rightPos;
-
     
 
     std::string readDeltaTime_str;
@@ -385,11 +412,14 @@ bool ai::replay( const char* pathFile) {
 
       Brain.Screen.clearScreen();
       Brain.Screen.setCursor(1, 5);
-      Brain.Screen.print("Left: ");
-      Brain.Screen.print(x);
-      Brain.Screen.setCursor(1, 17);
-      Brain.Screen.print("Right: ");
-      Brain.Screen.print(y);  
+      Brain.Screen.print("FL: ");
+      Brain.Screen.print(motorFL);
+      Brain.Screen.print("  FR: ");
+      Brain.Screen.print(motorFR);
+      Brain.Screen.print("  BL: ");
+      Brain.Screen.print(motorBL);
+      Brain.Screen.print("  BR: ");
+      Brain.Screen.print(motorBR);  
       Brain.Screen.setCursor(2, 5);
       Brain.Screen.print("RunLaunch: ");
       Brain.Screen.print(runlaunch); 
@@ -412,14 +442,6 @@ bool ai::replay( const char* pathFile) {
       Brain.Screen.print("Lancher Vel: ");
       //Brain.Screen.print(LauncherVel);    
  
-      Brain.Screen.setCursor(8, 5);
-      Brain.Screen.print("ReadLeftPos: ");
-      Brain.Screen.print(leftPos);    
-
-      Brain.Screen.setCursor(9, 5);
-      Brain.Screen.print("ActualLeftPos: ");
-      Brain.Screen.print(LeftDriveSmart.position(vex::rotationUnits::rev));    
-
     }
 
     double endTime = Brain.timer(vex::timeUnits::msec);
@@ -433,5 +455,5 @@ bool ai::replay( const char* pathFile) {
     //lastLeftPos = LeftDriveSmart.position(vex::rotationUnits::rev);
     //lastRightPos = RightDriveSmart.position(vex::rotationUnits::rev);
   }
-
+  return false;
 };

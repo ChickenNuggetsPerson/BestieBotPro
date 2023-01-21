@@ -78,6 +78,38 @@ void pneumaticPressed( void ) {
 };
 
 
+bool changeDriverMenu = false;
+void driverMenu( void ) {
+
+  changeDriverMenu = true;
+  bool confirm = true;
+
+  while (confirm) {
+    wait(0.1, seconds);
+
+    if (Controller1.ButtonLeft.pressing()) {
+      changeDriverMenu = false;
+      confirm = false;
+      andrewDriving = 0;
+    }
+
+    if (Controller1.ButtonRight.pressing()) {
+      changeDriverMenu = false;
+      confirm = false;
+      andrewDriving = 1;
+    }
+
+  }
+
+  botAi.writeFile("andrewDriving", andrewDriving);
+  botAi.aiDebug("Switching to: ");
+  if ( andrewDriving == 1 ) {
+    Brain.Screen.print("Andrew");
+  } else {
+    Brain.Screen.print("Alt");
+  }
+
+}
 
 
 // A global instance of competition
@@ -128,6 +160,7 @@ void autonomous(void) {
 
   bool runBotAuton = true;
   bool iterateCycle;
+  replaying = true;
 
   while(runBotAuton) {
   
@@ -147,6 +180,7 @@ void autonomous(void) {
 
   };
 
+  replaying = false;
   
   // Interperet why the loop ended
 
@@ -174,8 +208,13 @@ void autonomous(void) {
 
 void usercontrol(void) {
 
-  x = 0;
-  y = 0;
+  motorFL = 0;
+  motorFR = 0;
+  motorBL = 0;
+  motorBR = 0;
+
+  replaying = false;
+
   LauncherFeeder.setVelocity(0, percent);
   PickerUper.setVelocity(0, percent);
   LauncherGroup.setVelocity(0, percent);
@@ -233,12 +272,12 @@ int whenStarted() {
   // Loop that controlls the controllers display
   while (true) {
     
-    wait(1.0, seconds);
+    wait(0.5, seconds);
 
     Controller1.Screen.setCursor(1, 0);
     Controller1.Screen.clearScreen();
       
-    if (!launchConfirm) { 
+    if (!launchConfirm && !changeDriverMenu) { 
       
       // Shows the battery left until 20%
       // In testing, the smart motor's max velocity decreases to 50% at 20% battery capacity
@@ -250,9 +289,13 @@ int whenStarted() {
       Controller1.Screen.print("Drive Temp: ");
       Controller1.Screen.print(Drivetrain.temperature(percent));
       Controller1.Screen.newLine();
-      Controller1.Screen.print("^ Extend");
-    
-    } else {
+      Controller1.Screen.print("^ Extend    Change V");
+
+      //Controller1.Screen.print(rightMotorA.velocity(percent));
+      //Controller1.Screen.print("   ");
+      //Controller1.Screen.print(rightMotorB.velocity(percent));
+   
+    } else if (launchConfirm) {
 
       // Shows this menu when the user presses the up button
 
@@ -260,6 +303,13 @@ int whenStarted() {
       Controller1.Screen.newLine();
       Controller1.Screen.newLine();
       Controller1.Screen.print("< Cancel   Confirm >");
+
+    } else if (changeDriverMenu) {
+
+      Controller1.Screen.print("Change Driver Config");
+      Controller1.Screen.newLine();
+      Controller1.Screen.newLine();
+      Controller1.Screen.print("< Alt        Andrew >");  
 
     }
   }
@@ -301,6 +351,7 @@ int main() {
   Controller1.ButtonL1.released(buttonL1Released);
 
   Controller1.ButtonUp.pressed(pneumaticPressed);
+  Controller1.ButtonDown.pressed(driverMenu);
 
   // Start the main loop
   whenStarted();

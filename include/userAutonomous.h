@@ -27,7 +27,7 @@ class ai {
     int teamColor = 0;
     int currentTask = -1;
 
-
+    bool setVel(int vel);
 
     const char* pathNames[4] = {
       "Paths/Skills/main.txt",
