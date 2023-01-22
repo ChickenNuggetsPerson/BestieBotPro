@@ -31,10 +31,7 @@
 
 using namespace vex;
 
-
 ai botAi( 1 ); // Creates the autonomous ai object
-
-
 
 // Phenumatics launch code
 bool launchConfirm = false;
@@ -78,6 +75,7 @@ void pneumaticPressed( void ) {
 };
 
 
+// Driver config change menu
 bool changeDriverMenu = false;
 void driverMenu( void ) {
 
@@ -92,7 +90,6 @@ void driverMenu( void ) {
       confirm = false;
       andrewDriving = 0;
     }
-
     if (Controller1.ButtonRight.pressing()) {
       changeDriverMenu = false;
       confirm = false;
@@ -130,11 +127,6 @@ competition Competition;
 void pre_auton(void) {
   // Initializing Robot Configuration. DO NOT REMOVE!
   vexcodeInit();
-
-  
-
-  // All activities that occur before the competition starts
-  // Example: clearing encoders, setting servo positions, ...
 }
 
 /*---------------------------------------------------------------------------*/
@@ -208,6 +200,8 @@ void autonomous(void) {
 
 void usercontrol(void) {
 
+  // Reset everything for driver control
+
   motorFL = 0;
   motorFR = 0;
   motorBL = 0;
@@ -263,13 +257,14 @@ int whenStarted() {
 
   } else {
     Controller1.Screen.newLine();
-    Controller1.Screen.print("Homie Natasha");
-    //                         ^^ Natalie is our main driver
+    Controller1.Screen.print("Homie");
   }
   
   botAi.aiDebug("Homie");
 
-  // Loop that controlls the controllers display
+  double nextWarnTime = Brain.timer(vex::timeUnits::msec);
+
+  // Loop that controlls the controller's display
   while (true) {
     
     wait(0.5, seconds);
@@ -277,6 +272,7 @@ int whenStarted() {
     Controller1.Screen.setCursor(1, 0);
     Controller1.Screen.clearScreen();
       
+    // If no menu is being displayed, show the main menu
     if (!launchConfirm && !changeDriverMenu) { 
       
       // Shows the battery left until 20%
@@ -290,12 +286,9 @@ int whenStarted() {
       Controller1.Screen.print(Drivetrain.temperature(percent));
       Controller1.Screen.newLine();
       Controller1.Screen.print("^ Extend    Change V");
-
-      //Controller1.Screen.print(rightMotorA.velocity(percent));
-      //Controller1.Screen.print("   ");
-      //Controller1.Screen.print(rightMotorB.velocity(percent));
    
-    } else if (launchConfirm) {
+    }
+    if (launchConfirm) {
 
       // Shows this menu when the user presses the up button
 
@@ -304,7 +297,10 @@ int whenStarted() {
       Controller1.Screen.newLine();
       Controller1.Screen.print("< Cancel   Confirm >");
 
-    } else if (changeDriverMenu) {
+    }
+    if (changeDriverMenu) {
+
+      // Shows the driver change menu 
 
       Controller1.Screen.print("Change Driver Config");
       Controller1.Screen.newLine();
@@ -312,8 +308,27 @@ int whenStarted() {
       Controller1.Screen.print("< Alt        Andrew >");  
 
     }
-  }
 
+
+    // Warn the driver when the Drivetrain temperature is above 65%
+    // In testing the motors start to slow down when they get above 70%
+
+    // The menu shows for 10 seconds and then will show again after a minute
+    if (Drivetrain.temperature(percent) > 65 && Brain.timer(vex::timeUnits::msec) > nextWarnTime) {
+      Controller1.Screen.setCursor(1, 0);
+      Controller1.Screen.clearScreen();   
+      Controller1.Screen.print(" WARNING");
+      Controller1.Screen.newLine();
+      Controller1.Screen.print("Drivetrain Temp High");
+      Controller1.Screen.newLine();
+      Controller1.Screen.print("Temp: ");
+      Controller1.Screen.print(Drivetrain.temperature(percent));
+      Controller1.Screen.print("%");   
+      Controller1.rumble("....");
+      nextWarnTime = Brain.timer(vex::timeUnits::msec) + 60000;  
+      wait(10, seconds);
+    }
+  }
 
   return 0;
 }

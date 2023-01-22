@@ -289,6 +289,14 @@ bool ai::setVel(int vel) {
 
 
 // Code for replaying the autonomous recordings
+// After a lot of testing this is the final* version of the replay system
+// The program reads the values from the file and then apply the velocities to the motors
+
+//    After some testing, I found that the sd card takes ~10ms to read and write a line but at 
+//  random the sd card takes +100ms to write a line for whatever reason. To account for this, the 
+//  system records how long it took to write the line during the recording process and during the 
+//  replay process it takes into account how long it took to read and write the line and
+//  then waits the correct amount of time to keep the replay in sync with the recording.
 
 bool ai::replay( const char* pathFile) {
 
@@ -297,7 +305,7 @@ bool ai::replay( const char* pathFile) {
   motorBL = 0;
   motorBR = 0;
 
-  // open the file for reading
+  // open the file 
   std::ifstream input_file(pathFile);
 
   Brain.Screen.setPenColor(vex::color::white);
@@ -312,10 +320,6 @@ bool ai::replay( const char* pathFile) {
   while (true) {
 
     double startTime = Brain.timer(vex::timeUnits::msec);
-
-
-    //if ( LeftDriveSmart.position(vex::rotationUnits::rev) != lastLeftPos ) { LeftDriveSmart.rotateTo(lastLeftPos, vex::rotationUnits::rev); }
-    //if ( RightDriveSmart.position(vex::rotationUnits::rev) != lastRightPos ) { RightDriveSmart.rotateTo(lastRightPos, vex::rotationUnits::rev); }
 
     // read a line from the file
     std::string line;
@@ -337,7 +341,7 @@ bool ai::replay( const char* pathFile) {
     }
 
   
-    // parse the values from the line
+    // Read the values from the line
     std::stringstream ss(line);
 
     unsigned int runlaunch, runlaunchfeed, runmainfeed, fr, br, fl, bl = 0;
@@ -390,7 +394,7 @@ bool ai::replay( const char* pathFile) {
     readDeltaTimeStream >> readDeltaTime;
 
 
-
+    // Calculate launcher velocities
 
     if (runlaunch == 1) {
       launchVel = launchVel + 5.0;
@@ -409,6 +413,8 @@ bool ai::replay( const char* pathFile) {
     PickerUper.setVelocity(runmainfeed, percent);
 
     if (debug) {
+
+      // Display the values that were read
 
       Brain.Screen.clearScreen();
       Brain.Screen.setCursor(1, 5);
@@ -444,6 +450,7 @@ bool ai::replay( const char* pathFile) {
  
     }
 
+    // Calculate the time to wait based on the read delta time and the current delta time
     double endTime = Brain.timer(vex::timeUnits::msec);
     deltaTime = endTime - startTime;
 
@@ -452,8 +459,6 @@ bool ai::replay( const char* pathFile) {
 
     vex::task::sleep(fabs(readDeltaTime - deltaTime));
 
-    //lastLeftPos = LeftDriveSmart.position(vex::rotationUnits::rev);
-    //lastRightPos = RightDriveSmart.position(vex::rotationUnits::rev);
   }
   return false;
 };

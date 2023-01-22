@@ -6,13 +6,12 @@
 
 class ai {
   private:
-    
 
     int personality[10] = {};
     int personalitySize = 10;
     
     // Behaviors
-    bool changeRoller( bool longer );              // 10
+    bool changeRoller( bool longer ); // 10
     bool expand();                    // 11
 
 
@@ -29,11 +28,12 @@ class ai {
 
     bool setVel(int vel);
 
-    const char* pathNames[4] = {
+    const char* pathNames[5] = {
       "Paths/Skills/main.txt",
       "Paths/Left/Launch.txt",
       "Paths/Right/GoToRoller.txt",
-      "Paths/Right/RollerToMid.txt"
+      "Paths/Right/RollerToMid.txt",
+      "test.txt"
     };
 
   public:
