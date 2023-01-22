@@ -7,6 +7,8 @@
 #include "visionConfig.h"
 
 using namespace vex;
+using std::cout;
+using std::endl;
 
 
 // Constructor method 
@@ -317,6 +319,11 @@ bool ai::replay( const char* pathFile) {
 
   bool debug = true;
 
+  double avgDelta = 0;
+  double avgReadDelta = 0;
+  double avgWaitTime = 0;
+  int totalLines = 0;
+
   while (true) {
 
     double startTime = Brain.timer(vex::timeUnits::msec);
@@ -336,10 +343,19 @@ bool ai::replay( const char* pathFile) {
       motorBL = 0;
       motorBR = 0;
 
+
+      cout << "Replaying Done: " << endl;
+      cout << "" << endl;
+      cout << "Average Writing Delta: " << ( avgReadDelta / totalLines ) << endl;
+      cout << "Average Reading Delta: " << ( avgDelta / totalLines ) << endl;
+      cout << "Average Waiting Delta: " << ( avgWaitTime / totalLines ) << endl;
+      cout << "" << endl;
+
       //wait(10, seconds);
       return true;
     }
 
+    totalLines ++;
   
     // Read the values from the line
     std::stringstream ss(line);
@@ -456,6 +472,10 @@ bool ai::replay( const char* pathFile) {
 
     Brain.Screen.setCursor(7, 5);
     Brain.Screen.print(readDeltaTime - deltaTime);
+    
+    avgDelta = avgDelta + deltaTime;
+    avgReadDelta = avgReadDelta + readDeltaTime;
+    avgWaitTime = avgWaitTime + ( readDeltaTime - deltaTime ) ;
 
     vex::task::sleep(fabs(readDeltaTime - deltaTime));
 
