@@ -322,6 +322,8 @@ bool ai::replay( const char* pathFile) {
   double avgDelta = 0;
   double avgReadDelta = 0;
   double avgWaitTime = 0;
+  double highestDelta = 0;
+  double highestReadDelta = 0;
   int totalLines = 0;
 
   while (true) {
@@ -343,12 +345,17 @@ bool ai::replay( const char* pathFile) {
       motorBL = 0;
       motorBR = 0;
 
+      int i;
+      for ( i = 0; i < 20; i ++ ) { cout << "" << endl; }
 
       cout << "Replaying Done: " << endl;
       cout << "" << endl;
       cout << "Average Writing Delta: " << ( avgReadDelta / totalLines ) << endl;
       cout << "Average Reading Delta: " << ( avgDelta / totalLines ) << endl;
       cout << "Average Waiting Delta: " << ( avgWaitTime / totalLines ) << endl;
+      cout << "" << endl;
+      cout << "Highest Writing Delta: " << highestReadDelta << endl;
+      cout << "Highest Reading Delta: " << highestDelta << endl;
       cout << "" << endl;
 
       //wait(10, seconds);
@@ -476,6 +483,9 @@ bool ai::replay( const char* pathFile) {
     avgDelta = avgDelta + deltaTime;
     avgReadDelta = avgReadDelta + readDeltaTime;
     avgWaitTime = avgWaitTime + ( readDeltaTime - deltaTime ) ;
+
+    if ( deltaTime > highestDelta ) { highestDelta = deltaTime; }
+    if ( readDeltaTime > highestReadDelta ) { highestReadDelta = readDeltaTime; }
 
     vex::task::sleep(fabs(readDeltaTime - deltaTime));
 

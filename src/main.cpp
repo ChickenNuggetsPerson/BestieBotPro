@@ -309,7 +309,6 @@ int whenStarted() {
 
     }
 
-
     // Warn the driver when the Drivetrain temperature is above 65%
     // In testing the motors start to slow down when they get above 70%
 
@@ -317,10 +316,10 @@ int whenStarted() {
     if (Drivetrain.temperature(percent) > 65 && Brain.timer(vex::timeUnits::msec) > nextWarnTime) {
       Controller1.Screen.setCursor(1, 0);
       Controller1.Screen.clearScreen();   
-      Controller1.Screen.print(" WARNING");
-      Controller1.Screen.newLine();
+      Controller1.Screen.print("WARNING");
+      Controller1.Screen.setCursor(2, 0);
       Controller1.Screen.print("Drivetrain Temp High");
-      Controller1.Screen.newLine();
+      Controller1.Screen.setCursor(4, 0);
       Controller1.Screen.print("Temp: ");
       Controller1.Screen.print(Drivetrain.temperature(percent));
       Controller1.Screen.print("%");   

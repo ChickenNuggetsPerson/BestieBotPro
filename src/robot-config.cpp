@@ -22,8 +22,8 @@ motor_group LauncherGroup = motor_group(LauncherGroupMotorA, LauncherGroupMotorB
 motor PickerUper = motor(PORT16, ratio18_1, false);
 motor LauncherFeeder = motor(PORT13, ratio36_1, false);
 limit DiskLimitSwitch = limit(Brain.ThreeWirePort.B);
-digital_out fnewmatics = digital_out(Brain.ThreeWirePort.A);
-digital_out fnewmaticsB = digital_out(Brain.ThreeWirePort.B);
+digital_out fnewmatics = digital_out(Brain.ThreeWirePort.G);
+digital_out fnewmaticsB = digital_out(Brain.ThreeWirePort.H);
 
 
 
