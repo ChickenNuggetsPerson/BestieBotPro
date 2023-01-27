@@ -27,14 +27,21 @@ digital_out fnewmaticsB = digital_out(Brain.ThreeWirePort.H);
 
 
 
+
 int motorFL = 0;
 int motorFR = 0;
 int motorBL = 0;
 int motorBR = 0;
 
+int strafeFBL = 0;
+int strafeFBR = 0;
+int strafeLRL = 0;
+int strafeLRR = 0;
+
+
+
 bool replaying = false;
 
-int andrewDriving = 1;
 
 // VEXcode generated functions
 // define variable for remote controller enable/disable
@@ -45,11 +52,12 @@ bool DrivetrainRNeedsToBeStopped_Controller1 = true;
 
 // define a task that will handle monitoring inputs from Controller1
 int rc_auto_loop_function_Controller1() {
+  // process the controller input every 20 milliseconds
+  // update the motors based on the input values
 
-  int strafeFBL = 0;
-  int strafeFBR = 0;
-  int strafeLRL = 0;
-  int strafeLRR = 0;
+
+
+
 
   leftMotorA.spin(fwd);
   leftMotorB.spin(fwd);
@@ -61,57 +69,43 @@ int rc_auto_loop_function_Controller1() {
   rightMotorA.setVelocity(0, percent);
   rightMotorB.setVelocity(0, percent);
 
-  // Change the deadzone percent for the controller
   int deadzone = 10;
 
   while(true) {
-
-    // RemoteControlCodeEnabled was defined by the pregenerated controller config so I left it in just in case it is important
-    // Calculate motors if the robot is not currently replaying something 
-
     if(RemoteControlCodeEnabled && !replaying) {
-      
-      // Capture the joystick values
+      // calculate the drivetrain motor velocities from the controller joystick axies
+      // left = Axis3 + Axis1
+      // right = Axis3 - Axis1
+
       strafeFBL = Controller1.Axis3.position();
       strafeFBR = Controller1.Axis2.position();
 
-      strafeLRL = Controller1.Axis4.position();
+      strafeLRL = - Controller1.Axis4.position();
       strafeLRR = Controller1.Axis1.position();
 
-      // Filter out values based on deadzone
+
       if (strafeFBL < deadzone && strafeFBL > -deadzone) { strafeFBL = 0; }
       if (strafeFBR < deadzone && strafeFBR > -deadzone) { strafeFBR = 0; }
       if (strafeLRL < deadzone && strafeLRL > -deadzone) { strafeLRL = 0; }
       if (strafeLRR < deadzone && strafeLRR > -deadzone) { strafeLRR = 0; }
 
-
-      if (andrewDriving == 1) { // Driving config for Andrew
-
-        // Tank driving but with strafe in the left joystick
-        motorFL = strafeFBL + strafeLRL;
-        motorFR = strafeFBR - strafeLRL;
-
-        motorBL = strafeFBL - strafeLRL;
-        motorBR = strafeFBR + strafeLRL;
-      } else { // Alt driving config
-
-        // Linear movement in left joystick and turning in the right joystick
-        motorFL = strafeFBL + strafeLRL + strafeLRR;
-        motorFR = strafeFBL - strafeLRL - strafeLRR;
-
-        motorBL = strafeFBL - strafeLRL + strafeLRR;
-        motorBR = strafeFBL + strafeLRL - strafeLRR;
-      }
-
-
-      // The front motors turn slower due to the chain that connects them to the wheels so this accounts for this
-      int changePercent = 15;
-
-      if (motorBL > changePercent || motorBL < - changePercent) {if (motorBL > 0) {motorBL = motorBL - changePercent;} else {motorBL = motorBL + changePercent;}}
-      if (motorBR > changePercent || motorBR < - changePercent) {if (motorBR > 0) {motorBR = motorBR - changePercent;} else {motorBR = motorBR + changePercent;}}
     }
 
-    // The velocity variables can either be changed by the math above or the ai::replay() method
+
+    
+    motorFL = strafeFBL - strafeLRL;
+    motorFR = strafeFBR + strafeLRL;
+
+    motorBL = strafeFBL + strafeLRL;
+    motorBR = strafeFBR - strafeLRL;
+    
+
+    int changePercent = 15;
+
+    if (motorBL > changePercent || motorBL < - changePercent) {if (motorBL > 0) {motorBL = motorBL - changePercent;} else {motorBL = motorBL + changePercent;}}
+    if (motorBR > changePercent || motorBR < - changePercent) {if (motorBR > 0) {motorBR = motorBR - changePercent;} else {motorBR = motorBR + changePercent;}}
+
+
     leftMotorA.setVelocity(motorFL, percent);
     leftMotorB.setVelocity(motorBL, percent);
     rightMotorA.setVelocity(motorFR, percent);
@@ -122,7 +116,6 @@ int rc_auto_loop_function_Controller1() {
   }
   return 0;
 }
-
 /**
  * Used to initialize code/tasks/devices added using tools in VEXcode Pro.
  * 

@@ -40,6 +40,9 @@ void StartLauncherControl() {
     
     if (!Controller1.ButtonDown.pressing()) {
       LauncherGroup.setVelocity(LauncherVel, percent);
+      //LauncherGroupMotorA.setVelocity(LauncherVel, percent);
+      //LauncherGroupMotorB.setVelocity(LauncherVel - 20, percent);
+      
     } else {
       LauncherGroup.setVelocity(-50, percent);
     }

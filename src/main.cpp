@@ -25,6 +25,8 @@
 
 #include "vex.h"
 
+#include <fstream>
+
 
 #include "userAutonomous.h"
 #include "userFunctions.h"
@@ -73,40 +75,6 @@ void pneumaticPressed( void ) {
   }
 
 };
-
-
-// Driver config change menu
-bool changeDriverMenu = false;
-void driverMenu( void ) {
-
-  changeDriverMenu = true;
-  bool confirm = true;
-
-  while (confirm) {
-    wait(0.1, seconds);
-
-    if (Controller1.ButtonLeft.pressing()) {
-      changeDriverMenu = false;
-      confirm = false;
-      andrewDriving = 0;
-    }
-    if (Controller1.ButtonRight.pressing()) {
-      changeDriverMenu = false;
-      confirm = false;
-      andrewDriving = 1;
-    }
-
-  }
-
-  botAi.writeFile("andrewDriving", andrewDriving);
-  botAi.aiDebug("Switching to: ");
-  if ( andrewDriving == 1 ) {
-    Brain.Screen.print("Andrew");
-  } else {
-    Brain.Screen.print("Alt");
-  }
-
-}
 
 
 // A global instance of competition
@@ -202,10 +170,10 @@ void usercontrol(void) {
 
   // Reset everything for driver control
 
-  motorFL = 0;
-  motorFR = 0;
-  motorBL = 0;
-  motorBR = 0;
+  strafeFBL = 0;
+  strafeFBR = 0;
+  strafeLRL = 0;
+  strafeLRR = 0;
 
   replaying = false;
 
@@ -239,6 +207,7 @@ int whenStarted() {
   
   // ^^ Inside joke in the team 
 
+  //Brain.Screen.print(Competition.isCompetitionSwitch());
 
   botAi.init(); // Inits the ai object
 
@@ -273,7 +242,7 @@ int whenStarted() {
     Controller1.Screen.clearScreen();
       
     // If no menu is being displayed, show the main menu
-    if (!launchConfirm && !changeDriverMenu) { 
+    if (!launchConfirm) { 
       
       // Shows the battery left until 20%
       // In testing, the smart motor's max velocity decreases to 50% at 20% battery capacity
@@ -285,7 +254,7 @@ int whenStarted() {
       Controller1.Screen.print("Drive Temp: ");
       Controller1.Screen.print(Drivetrain.temperature(percent));
       Controller1.Screen.newLine();
-      Controller1.Screen.print("^ Extend    Change V");
+      Controller1.Screen.print("^ Extend");
    
     }
     if (launchConfirm) {
@@ -298,22 +267,12 @@ int whenStarted() {
       Controller1.Screen.print("< Cancel   Confirm >");
 
     }
-    if (changeDriverMenu) {
-
-      // Shows the driver change menu 
-
-      Controller1.Screen.print("Change Driver Config");
-      Controller1.Screen.newLine();
-      Controller1.Screen.newLine();
-      Controller1.Screen.print("< Alt        Andrew >");  
-
-    }
 
     // Warn the driver when the Drivetrain temperature is above 65%
     // In testing the motors start to slow down when they get above 70%
 
     // The menu shows for 10 seconds and then will show again after a minute
-    if (Drivetrain.temperature(percent) > 65 && Brain.timer(vex::timeUnits::msec) > nextWarnTime) {
+    if (Drivetrain.temperature(percent) >= 60 && Brain.timer(vex::timeUnits::msec) > nextWarnTime) {
       Controller1.Screen.setCursor(1, 0);
       Controller1.Screen.clearScreen();   
       Controller1.Screen.print("WARNING");
@@ -365,7 +324,7 @@ int main() {
   Controller1.ButtonL1.released(buttonL1Released);
 
   Controller1.ButtonUp.pressed(pneumaticPressed);
-  Controller1.ButtonDown.pressed(driverMenu);
+
 
   // Start the main loop
   whenStarted();

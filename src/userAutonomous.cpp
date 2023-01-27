@@ -29,19 +29,6 @@ void ai::init() {
 
     // all config files are written to the sd card through the autonSelector program
 
-
-    aiDebug("Loading Driving Config");
-    
-    andrewDriving = readFile("andrewDriving");
-    
-    Brain.Screen.newLine();
-
-    if ( andrewDriving == 1 ) {
-      Brain.Screen.print("Loaded Andrew Driving Config");
-    } else {
-      Brain.Screen.print("Loading Alt Driving Config");      
-    }
-
     aiDebug("Loading Auton Config: ");
 
     // all configs are stored as int values
@@ -76,9 +63,20 @@ void ai::init() {
       }
 
     } else {
-      personality[1] = 13;
-      personality[2] = 12;
-      personality[3] = 11;
+      // Skills check programing 
+      // All skills paths are stored as numbers above 100
+    
+      // Todo: build a smart system that detects what skills path files exists and configures correctly
+
+
+      // Current Skills Paths:
+      //  0: Change to roller to the left
+      //  1: 
+
+
+      personality[1] = 13; // Skills roller code. For whatever reason, skills fields have different roller heights
+      personality[2] = 12; // Run skills path in pathNames array
+      personality[9] = 11; // Expand
 
     }
 
@@ -212,6 +210,7 @@ bool ai::runTask( int taskNum ) {
 
   // Run the specified behavior
   if (personality[taskNum] == 0) { return true; }; // If 0 is inputed, then it will skip
+  if (personality[taskNum] >= 100) { return replay(skillsPathNames[personality[taskNum] - 100]); }
   if (personality[taskNum] == 10) { return changeRoller( false ); };
   if (personality[taskNum] == 11) { return expand();}
   if (personality[taskNum] == 12) {return replay(pathNames[0]); }
@@ -247,7 +246,7 @@ bool ai::changeRoller( bool longer ) {
 
 
   setVel(30);
-  Drivetrain.drive(vex::directionType::fwd);
+  
 
   if ( longer ) {
     wait(0.45 * 2, seconds);
@@ -281,12 +280,10 @@ bool ai::expand() {
 
 
 bool ai::setVel(int vel) {
-  motorFL = vel;
-  motorFR = vel;
-  motorBL = vel;
-  motorBR = vel;
-  return true;
 
+  strafeFBL = vel;
+
+  return true;
 }
 
 
@@ -301,13 +298,13 @@ bool ai::setVel(int vel) {
 //  then waits the correct amount of time to keep the replay in sync with the recording.
 
 bool ai::replay( const char* pathFile) {
-
-  motorFL = 0;
-  motorFR = 0;
-  motorBL = 0;
-  motorBR = 0;
-
-  // open the file 
+  
+  if ( !Brain.SDcard.exists(pathFile) ) { 
+    aiDebug("File does not Exist");
+    return true;
+   }
+  
+  // open the file for reading
   std::ifstream input_file(pathFile);
 
   Brain.Screen.setPenColor(vex::color::white);
@@ -326,9 +323,15 @@ bool ai::replay( const char* pathFile) {
   double highestReadDelta = 0;
   int totalLines = 0;
 
+  replaying = true;
+
   while (true) {
 
     double startTime = Brain.timer(vex::timeUnits::msec);
+
+
+    //if ( LeftDriveSmart.position(vex::rotationUnits::rev) != lastLeftPos ) { LeftDriveSmart.rotateTo(lastLeftPos, vex::rotationUnits::rev); }
+    //if ( RightDriveSmart.position(vex::rotationUnits::rev) != lastRightPos ) { RightDriveSmart.rotateTo(lastRightPos, vex::rotationUnits::rev); }
 
     // read a line from the file
     std::string line;
@@ -340,10 +343,17 @@ bool ai::replay( const char* pathFile) {
       input_file.clear();
       input_file.seekg(0, std::ios::beg);
 
-      motorFL = 0;
-      motorFR = 0;
-      motorBL = 0;
-      motorBR = 0;
+      strafeFBL = 0;
+      strafeFBR = 0;
+      strafeLRL = 0;
+      strafeLRR = 0;
+
+      replaying = false;
+
+
+      PickerUper.setVelocity(0, percent);
+      LauncherFeeder.setVelocity(0, percent);
+      LauncherGroup.setVelocity(0, percent);
 
       int i;
       for ( i = 0; i < 20; i ++ ) { cout << "" << endl; }
@@ -359,39 +369,39 @@ bool ai::replay( const char* pathFile) {
       cout << "" << endl;
 
       //wait(10, seconds);
-      return true;
+      break;
     }
 
     totalLines ++;
-  
-    // Read the values from the line
+
+    // parse the values from the line
     std::stringstream ss(line);
 
-    unsigned int runlaunch, runlaunchfeed, runmainfeed, fr, br, fl, bl = 0;
+    unsigned int runlaunch, runlaunchfeed, runmainfeed, fbl, fbr, lrl, lrr = 0;
 
-    std::string fr_str;
-    std::getline(ss, fr_str, ',');
-    std::istringstream frStream(fr_str.c_str());
-    frStream >> fr;
-    motorFR = fr;
+    std::string fbl_str;
+    std::getline(ss, fbl_str, ',');
+    std::istringstream fblStream(fbl_str.c_str());
+    fblStream >> fbl;
+    strafeFBL = fbl;
 
-    std::string fl_str;
-    std::getline(ss, fl_str, ',');
-    std::istringstream flStream(fl_str.c_str());
-    flStream >> fl;
-    motorFL = fl;
+    std::string fbr_str;
+    std::getline(ss, fbr_str, ',');
+    std::istringstream fbrStream(fbr_str.c_str());
+    fbrStream >> fbr;
+    strafeFBR = fbr;
 
-    std::string br_str;
-    std::getline(ss, br_str, ',');
-    std::istringstream brStream(br_str.c_str());
-    brStream >> br;
-    motorBR = br;
+    std::string lrl_str;
+    std::getline(ss, lrl_str, ',');
+    std::istringstream lrlStream(lrl_str.c_str());
+    lrlStream >> lrl;
+    strafeLRL = - lrl;
 
-    std::string bl_str;
-    std::getline(ss, bl_str, ',');
-    std::istringstream blStream(bl_str.c_str());
-    blStream >> bl;
-    motorBL = bl;
+    std::string lrr_str;
+    std::getline(ss, lrr_str, ',');
+    std::istringstream lrrStream(lrr_str.c_str());
+    lrrStream >> lrr;
+    strafeLRR = lrr;
 
     std::string runlaunch_str;
     std::getline(ss, runlaunch_str, ',');
@@ -417,7 +427,7 @@ bool ai::replay( const char* pathFile) {
     readDeltaTimeStream >> readDeltaTime;
 
 
-    // Calculate launcher velocities
+
 
     if (runlaunch == 1) {
       launchVel = launchVel + 5.0;
@@ -433,22 +443,23 @@ bool ai::replay( const char* pathFile) {
 
     LauncherGroup.setVelocity(launchVel, percent);
     LauncherFeeder.setVelocity(runlaunchfeed * 100, percent);
-    PickerUper.setVelocity(runmainfeed, percent);
+    if ( runmainfeed > 0 ) { PickerUper.setVelocity(100, percent); }
+    if ( runmainfeed < 0 ) { PickerUper.setVelocity(-100, percent); }
+    if ( runmainfeed == 0 ) { PickerUper.setVelocity(0, percent); } 
+    
 
     if (debug) {
-
-      // Display the values that were read
 
       Brain.Screen.clearScreen();
       Brain.Screen.setCursor(1, 5);
       Brain.Screen.print("FL: ");
-      Brain.Screen.print(motorFL);
+      //Brain.Screen.print(motorFL);
       Brain.Screen.print("  FR: ");
-      Brain.Screen.print(motorFR);
+     // Brain.Screen.print(motorFR);
       Brain.Screen.print("  BL: ");
-      Brain.Screen.print(motorBL);
+      //Brain.Screen.print(motorBL);
       Brain.Screen.print("  BR: ");
-      Brain.Screen.print(motorBR);  
+      //Brain.Screen.print(motorBR);  
       Brain.Screen.setCursor(2, 5);
       Brain.Screen.print("RunLaunch: ");
       Brain.Screen.print(runlaunch); 
@@ -473,7 +484,6 @@ bool ai::replay( const char* pathFile) {
  
     }
 
-    // Calculate the time to wait based on the read delta time and the current delta time
     double endTime = Brain.timer(vex::timeUnits::msec);
     deltaTime = endTime - startTime;
 
@@ -488,7 +498,6 @@ bool ai::replay( const char* pathFile) {
     if ( readDeltaTime > highestReadDelta ) { highestReadDelta = readDeltaTime; }
 
     vex::task::sleep(fabs(readDeltaTime - deltaTime));
-
   }
-  return false;
+  return true;
 };

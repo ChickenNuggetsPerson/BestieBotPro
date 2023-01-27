@@ -36,6 +36,19 @@ class ai {
       "test.txt"
     };
 
+    const char* skillsPathNames[10] = {
+      "Paths/Skills/zero.txt",
+      "Paths/Skills/one.txt",
+      "Paths/Skills/two.txt",
+      "Paths/Skills/three.txt",
+      "Paths/Skills/four.txt",
+      "Paths/Skills/five.txt",
+      "Paths/Skills/six.txt",
+      "Paths/Skills/seven.txt",
+      "Paths/Skills/eight.txt",
+      "Paths/Skills/nine.txt"
+    };
+
   public:
     
     // Methods
