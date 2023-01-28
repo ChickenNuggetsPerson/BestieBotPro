@@ -325,7 +325,6 @@ int main() {
 
   Controller1.ButtonUp.pressed(pneumaticPressed);
 
-
   // Start the main loop
   whenStarted();
 
