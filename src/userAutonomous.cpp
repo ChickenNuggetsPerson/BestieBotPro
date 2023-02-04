@@ -70,13 +70,16 @@ void ai::init() {
 
 
       // Current Skills Paths:
-      //  0: Change to roller to the left
+      //  0: Drive to corner 
       //  1: 
 
 
       personality[1] = 13; // Skills roller code. For whatever reason, skills fields have different roller heights
-      personality[2] = 12; // Run skills path in pathNames array
-      personality[9] = 11; // Expand
+      personality[2] = 100; // Run skills path in pathNames array
+      //personality[3] = 13;
+      //personality[4] = 101;
+      personality[5] = 11; // Expand
+      personality[6] = 101;
 
     }
 
@@ -214,7 +217,7 @@ bool ai::runTask( int taskNum ) {
   if (personality[taskNum] == 10) { return changeRoller( false ); };
   if (personality[taskNum] == 11) { return expand();}
   if (personality[taskNum] == 12) {return replay(pathNames[0]); }
-  if (personality[taskNum] == 13) { return changeRoller( true ); };
+  if (personality[taskNum] == 13) { return changeRoller( true ); }; // Longer roller change to true 
   if (personality[taskNum] >= 0 && personality[taskNum] < 10) { return replay(pathNames[personality[taskNum]]); }
   
   return false;
@@ -244,12 +247,12 @@ bool ai::changeRoller( bool longer ) {
     PickerUper.setVelocity(-100, percent);
   }
 
-
+  setVel(0);
   setVel(30);
   
 
   if ( longer ) {
-    wait(0.45 * 2, seconds);
+    wait(0.45 * 1.5, seconds);
   } else {
     wait(0.45, seconds);
   }
@@ -282,6 +285,7 @@ bool ai::expand() {
 bool ai::setVel(int vel) {
 
   strafeFBL = vel;
+  strafeFBR = vel;
 
   return true;
 }
