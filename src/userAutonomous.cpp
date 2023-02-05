@@ -188,6 +188,11 @@ bool ai::iterate() {
 // Runs the behavior at the coresponding personality index
 bool ai::runTask( int taskNum ) {
 
+  strafeFBL = 0;
+  strafeFBR = 0;
+  strafeLRL = 0;
+  strafeLRR = 0;
+
   // Debug Messages
   aiDebug("Running Task: ");
   Brain.Screen.print( taskNum );
@@ -269,15 +274,15 @@ bool ai::setVel(int vel) {
   return true;
 }
 
-
 bool ai::turnTo(int rot, bool relative) {
 
   if (!gyroSensor.installed()) {aiError("Inertial Sensor Not Installed"); Controller1.rumble("--"); return false;}
-
+  
   // Todo: Tune these values
-  double pidP = 0.0;
-  double pidI = 0.0;
-  double pidD = 0.0;
+  double pidP = 1.0; // Tune First
+  double pidI = 1.0; // Tune Last
+  double pidD = 1.0; // Tune Second
+
 
   int error;
   int prevError = 0;
@@ -358,8 +363,6 @@ bool ai::driveDist(double dist, int speed) {
   return true;
 }
 
-
-
 bool ai::runPath( int pathNum ) {
 
     //const char* pathNames[5] = {
@@ -394,7 +397,6 @@ bool ai::runPath( int pathNum ) {
     //  "test.txt"
 
   }
-
 
   return true;
 };
