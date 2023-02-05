@@ -20,6 +20,7 @@ extern motor rightMotorB;
 extern motor leftMotorA;
 extern motor leftMotorB;
 
+extern inertial gyroSensor;
 
 extern int strafeFBL;
 extern int strafeFBR;

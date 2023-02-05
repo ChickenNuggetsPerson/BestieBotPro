@@ -77,6 +77,27 @@ void pneumaticPressed( void ) {
 };
 
 
+
+void recalibrate() {
+  if (gyroSensor.installed()) {
+    Brain.Screen.newLine();
+    Brain.Screen.print("Starting Calibration");
+    Controller1.Screen.clearScreen();
+    Controller1.Screen.setCursor(2, 1);
+    Controller1.Screen.print("Calibrating...");
+    Controller1.Screen.setCursor(3, 1);
+    Controller1.Screen.print("Do Not Touch Robot");
+    Controller1.rumble("..");
+    gyroSensor.startCalibration();
+    while (gyroSensor.isCalibrating()) { wait(100, msec);}
+  } else {
+    Brain.Screen.newLine();
+    Brain.Screen.print("Inertial Sensor Not Installed");
+  }
+}
+
+
+
 // A global instance of competition
 competition Competition;
 
@@ -211,6 +232,7 @@ int whenStarted() {
 
   botAi.init(); // Inits the ai object
 
+  recalibrate();
 
   // Quality of life feature... 
   // Controller will notify the user if the battery is under 30%
