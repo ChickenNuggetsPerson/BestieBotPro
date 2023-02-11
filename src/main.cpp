@@ -22,11 +22,9 @@
 // LineRight            line          H               
 // ---- END VEXCODE CONFIGURED DEVICES ----
 
-
 #include "vex.h"
 
 #include <fstream>
-
 
 #include "userAutonomous.h"
 #include "userFunctions.h"
@@ -55,12 +53,10 @@ void pneumaticPressed( void ) {
       confirm = false;
       launchConfirm = false;
     }
-
+    
     if (Controller1.ButtonRight.pressing()) {
       // Launch
-
       botAi.aiDebug("Launching");
-
       fnewmatics.set(true);
       fnewmaticsB.set(true);
 
@@ -232,8 +228,6 @@ int whenStarted() {
 
   botAi.init(); // Inits the ai object
 
-  recalibrate();
-
   // Quality of life feature... 
   // Controller will notify the user if the battery is under 30%
   if (Brain.Battery.capacity() <=30) {
@@ -347,7 +341,8 @@ int main() {
 
   Controller1.ButtonUp.pressed(pneumaticPressed);
 
-  // Start the main loop
+  // Calibrate Sensor and start main loop
+  recalibrate();
   whenStarted();
 
   // Prevent main from exiting with an infinite loop.

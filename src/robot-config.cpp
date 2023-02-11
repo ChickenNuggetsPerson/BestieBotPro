@@ -8,11 +8,11 @@ using code = vision::code;
 brain  Brain;
 
 // VEXcode device constructors
-motor leftMotorA = motor(PORT11, ratio18_1, false);
-motor leftMotorB = motor(PORT12, ratio18_1, false);
+motor leftMotorA = motor(PORT1, ratio18_1, false);
+motor leftMotorB = motor(PORT2, ratio18_1, false);
 motor_group LeftDriveSmart = motor_group(leftMotorA, leftMotorB);
-motor rightMotorA = motor(PORT20, ratio18_1, true);
-motor rightMotorB = motor(PORT19, ratio18_1, true);
+motor rightMotorA = motor(PORT10, ratio18_1, true);
+motor rightMotorB = motor(PORT9, ratio18_1, true);
 motor_group RightDriveSmart = motor_group(rightMotorA, rightMotorB);
 drivetrain Drivetrain = drivetrain(LeftDriveSmart, RightDriveSmart, 319.19, 254, 254, mm, 1);
 controller Controller1 = controller(primary);
@@ -27,8 +27,6 @@ digital_out fnewmaticsB = digital_out(Brain.ThreeWirePort.H);
 inertial gyroSensor = inertial(PORT5);
 
 
-
-
 int motorFL = 0;
 int motorFR = 0;
 int motorBL = 0;
@@ -39,10 +37,7 @@ int strafeFBR = 0;
 int strafeLRL = 0;
 int strafeLRR = 0;
 
-
-
 bool replaying = false;
-
 
 // VEXcode generated functions
 // define variable for remote controller enable/disable
@@ -55,10 +50,6 @@ bool DrivetrainRNeedsToBeStopped_Controller1 = true;
 int rc_auto_loop_function_Controller1() {
   // process the controller input every 20 milliseconds
   // update the motors based on the input values
-
-
-
-
 
   leftMotorA.spin(fwd);
   leftMotorB.spin(fwd);
@@ -92,8 +83,6 @@ int rc_auto_loop_function_Controller1() {
 
     }
 
-
-    
     motorFL = strafeFBL - strafeLRL;
     motorFR = strafeFBR + strafeLRL;
 

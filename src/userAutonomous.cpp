@@ -234,13 +234,11 @@ bool ai::changeRoller( bool longer ) {
   setVel(0);
   setVel(30);
   
-
   if ( longer ) {
     wait(0.45 * 1.5, seconds);
   } else {
     wait(0.45, seconds);
   }
-  
 
   setVel(0);
   PickerUper.setVelocity(0, percent);
@@ -266,7 +264,7 @@ bool ai::expand() {
 }
 
 
-bool ai::setVel(int vel) {
+bool ai::setVel(double vel) {
 
   strafeFBL = vel;
   strafeFBR = vel;
@@ -274,7 +272,7 @@ bool ai::setVel(int vel) {
   return true;
 }
 
-bool ai::turnTo(int rot, bool relative) {
+bool ai::turnTo(int rot, double timeOut, bool relative) {
 
   if (!gyroSensor.installed()) {aiError("Inertial Sensor Not Installed"); Controller1.rumble("--"); return false;}
   
@@ -295,9 +293,15 @@ bool ai::turnTo(int rot, bool relative) {
   } else { 
     desiredHeading = rot;
   }
-  
 
-  while (true) {
+  double endTime;
+  if ( timeOut == 0) {
+    endTime = 999999999999999999;
+  } else {
+    endTime = Brain.timer(vex::timeUnits::msec) + ( timeOut * 1000 );
+  }
+
+  while (true && Brain.timer(vex::timeUnits::msec) < endTime ) {
 
     int currentHeading = gyroSensor.heading(vex::rotationUnits::deg);
 
@@ -309,8 +313,8 @@ bool ai::turnTo(int rot, bool relative) {
 
     int motorPower = ( error * pidP + derivative * pidD + totalError * pidI);
 
-    strafeFBL = 0;
-    strafeFBR = 0;
+    strafeFBL = motorPower;
+    strafeFBR = -motorPower;
 
     cout << "PID OUT: " << motorPower << endl;
 
@@ -323,42 +327,125 @@ bool ai::turnTo(int rot, bool relative) {
   return true;
 };
 
-bool ai::driveDist(double dist, int speed) {
+bool ai::driveDist(double dist, bool dynamicSpeed, int speed, double timeOut) {
+
+  cout << "" << endl;
+  cout << "" << endl;
+  cout << "" << endl;
+  cout << "" << endl;
+  cout << "" << endl;
+  cout << "" << endl;
+  cout << "" << endl;
+  cout << "" << endl;
+  cout << "" << endl;
+  cout << "" << endl;
+
+  double wantedDistance = dist;
+
+  if ( dist > 0 ) {
+    wantedDistance = dist - 1;
+  } else {
+    wantedDistance = dist + 1;
+  } 
 
   double pi = 3.14;
   double radius = 2;
   double circumference = 2 * pi * radius;
 
   double distTraveled = 0;
-  double error = 0;
 
   leftMotorA.resetRotation();
   rightMotorA.resetRotation();
+  leftMotorB.resetRotation();
+  rightMotorB.resetRotation();
 
-  if (dist > 0) {
-    strafeFBL = speed;
-    strafeFBR = speed;
+  double endTime;
+  if ( timeOut == 0) {
+    endTime = 999999999999999999;
   } else {
-    strafeFBL = -speed;
-    strafeFBR = -speed;
+    endTime = Brain.timer(vex::timeUnits::msec) + ( timeOut * 1000 );
   }
 
-  while ( fabs(error) > 0.5 ) {
-    double left = ( leftMotorA.rotation(vex::rotationUnits::rev) / 3 ) * 5;
-    double right = ( rightMotorA.rotation(vex::rotationUnits::rev) / 3 ) * 5;
-    double avgRot = ( left + right ) / 2;
 
-    distTraveled += ( circumference * avgRot );
-    if (dist > 0) {
-      error = dist - distTraveled;
+  // Dynamic Speed Stuff
+
+  double maxSpeed = 75;
+  double minSpeed = 15;
+  
+  double accelerationDist = 15;
+  double minSpeedDist = 0;
+
+  double dynSpeed = 0;
+
+
+  if ( dynamicSpeed ) {
+  } else if (wantedDistance > 0) {
+    setVel(speed);
+  } else {
+    setVel(-speed);
+  }
+
+
+  while ( fabs(wantedDistance) > distTraveled && Brain.timer(vex::timeUnits::msec) < endTime ) {
+    // Todo: do gear math
+    double Fleft = leftMotorA.rotation(vex::rotationUnits::rev);
+    double Fright = rightMotorA.rotation(vex::rotationUnits::rev);
+
+    double Bleft = leftMotorB.rotation(vex::rotationUnits::rev);
+    double Bright = rightMotorB.rotation(vex::rotationUnits::rev);
+
+    double avgRot = ( Fleft + Fright + Bleft + Bright) / 4;
+
+    distTraveled += fabs( circumference * avgRot );
+
+
+    if ( dynamicSpeed ) {
+      double remainingDist = fabs(distTraveled - fabs(wantedDistance));
+
+      double percent = 0;
+
+      if ( fabs(distTraveled) < accelerationDist ) {
+        // Initial acceleraction
+        percent = fabs( distTraveled / accelerationDist );
+        if ( percent < 0.2 ) { percent = 0.2;}
+        dynSpeed = percent * maxSpeed;      
+      } else {
+        // Handle slowing down
+        percent = ( remainingDist - minSpeedDist ) / ( accelerationDist - minSpeedDist );
+        dynSpeed = percent * maxSpeed;
+
+        if (dynSpeed > maxSpeed) { dynSpeed = maxSpeed; }
+        if (dynSpeed < minSpeed) { dynSpeed = minSpeed; }
+      }
+    
+    
+      cout << " " << endl;
+      cout << remainingDist << endl;
+      cout << percent << endl;
+      cout << dynSpeed << endl;
+
+      if ( dist < 0 ) { setVel(-dynSpeed); } else { setVel(dynSpeed); }
+      
     } else {
-      error = distTraveled - dist;
+      cout << " " << endl;
+      cout << "Dist Traveled: " << distTraveled << endl;
+      cout << "Debug: " << endl;
+      cout << Fleft << " " << Fright << endl;
+      cout << Bleft << " " << Bright << endl;
     }
+
+
+
+
     
     leftMotorA.resetRotation();
     rightMotorA.resetRotation();
-    wait(100, msec);
+    leftMotorB.resetRotation();
+    rightMotorB.resetRotation();
+    wait(10, msec);
   }  
+
+  setVel(0);
 
   return true;
 }
@@ -376,9 +463,11 @@ bool ai::runPath( int pathNum ) {
   if ( pathNum == 1 ) {
     //  "Paths/Skills/main.txt",
     
-    changeRoller(false);
-    driveDist(2, 10);
-    turnTo(45);
+    //changeRoller(false);
+    driveDist(120);
+    wait(5, seconds);
+    driveDist(-120, false, 20);
+    //turnTo(45, 5000);
 
   }
   if ( pathNum == 2 ) {
