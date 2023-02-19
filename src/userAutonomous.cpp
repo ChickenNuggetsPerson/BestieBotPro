@@ -151,7 +151,7 @@ void ai::aiError(const char* message) {
   Brain.Screen.setPenColor(vex::color::red);
   Brain.Screen.print(message);
   Brain.Screen.setPenColor(vex::color::white);
-  
+  cout << "ERROR: " << message << endl;
 }
 
 // Displays debug message on brain screen
@@ -163,6 +163,7 @@ void ai::aiDebug(const char* message) {
   Brain.Screen.setPenColor(vex::color::purple);
   Brain.Screen.print(message);
   Brain.Screen.setPenColor(vex::color::white);
+  cout << "DEBUG: " << message << endl;
 
 }
 
@@ -224,6 +225,7 @@ bool ai::changeRoller( bool longer ) {
 
   Brain.Screen.newLine();
   Brain.Screen.print("Starting Roller Code");
+  cout << "Changing Roller" << endl;
 
   if ( longer ) {
     PickerUper.setVelocity(100, percent);
@@ -264,35 +266,41 @@ bool ai::expand() {
 }
 
 
-bool ai::setVel(double vel) {
+bool ai::setVel(double lVel, double rVel) {
 
-  strafeFBL = vel;
-  strafeFBR = vel;
-
+  if ( rVel == 10000) {
+    strafeFBL = lVel;
+    strafeFBR = lVel;
+  } else {
+    strafeFBL = lVel;
+    strafeFBR = rVel;
+  }
+  
   return true;
 }
 
-bool ai::turnTo(int rot, double timeOut, bool relative) {
+bool ai::turnTo(int rot, double timeOut) {
+
+  // Trash code, just use the Drivetrain.turnToHeading()
 
   if (!gyroSensor.installed()) {aiError("Inertial Sensor Not Installed"); Controller1.rumble("--"); return false;}
   
   // Todo: Tune these values
-  double pidP = 1.0; // Tune First
-  double pidI = 1.0; // Tune Last
-  double pidD = 1.0; // Tune Second
-
+  double pidP = 1; // Tune First
+  double pidI = 0; // Tune Last
+  double pidD = 0; // Tune Second
 
   int error;
   int prevError = 0;
   int derivative;
   int totalError = 0;
 
-  int desiredHeading;
-  if (relative) {
-    desiredHeading = rot + gyroSensor.heading(vex::rotationUnits::deg);
-  } else { 
-    desiredHeading = rot;
-  }
+  gyroSensor.resetRotation();
+  gyroSensor.resetHeading();
+
+  int desiredHeading = rot;
+
+  //desiredHeading = desiredHeading & 360;
 
   double endTime;
   if ( timeOut == 0) {
@@ -301,22 +309,28 @@ bool ai::turnTo(int rot, double timeOut, bool relative) {
     endTime = Brain.timer(vex::timeUnits::msec) + ( timeOut * 1000 );
   }
 
-  while (true && Brain.timer(vex::timeUnits::msec) < endTime ) {
+  int precision = 1;
 
-    int currentHeading = gyroSensor.heading(vex::rotationUnits::deg);
+  int motorPower = 0 + precision;
+
+  while (true && Brain.timer(vex::timeUnits::msec) < endTime) {
+
+    int currentHeading = gyroSensor.angle(vex::rotationUnits::deg);
 
     error = currentHeading - desiredHeading;
     derivative = error - prevError;
 
     totalError += error;
 
+    motorPower = ( error * pidP + derivative * pidD + totalError * pidI);
 
-    int motorPower = ( error * pidP + derivative * pidD + totalError * pidI);
-
-    strafeFBL = motorPower;
-    strafeFBR = -motorPower;
-
+    strafeFBL = -motorPower;
+    strafeFBR = motorPower;
+    
+    
     cout << "PID OUT: " << motorPower << endl;
+    //cout << "Heading: " << gyroSensor.heading(vex::rotationUnits::deg) << endl;
+    cout << "Angle: " << gyroSensor.angle(vex::rotationUnits::deg) << endl;
 
 
     prevError = error;
@@ -329,16 +343,7 @@ bool ai::turnTo(int rot, double timeOut, bool relative) {
 
 bool ai::driveDist(double dist, bool dynamicSpeed, int speed, double timeOut) {
 
-  cout << "" << endl;
-  cout << "" << endl;
-  cout << "" << endl;
-  cout << "" << endl;
-  cout << "" << endl;
-  cout << "" << endl;
-  cout << "" << endl;
-  cout << "" << endl;
-  cout << "" << endl;
-  cout << "" << endl;
+  cout << "Starting Drive Dist" << endl;
 
   double wantedDistance = dist;
 
@@ -351,6 +356,8 @@ bool ai::driveDist(double dist, bool dynamicSpeed, int speed, double timeOut) {
   double pi = 3.14;
   double radius = 2;
   double circumference = 2 * pi * radius;
+
+
 
   double distTraveled = 0;
 
@@ -375,7 +382,7 @@ bool ai::driveDist(double dist, bool dynamicSpeed, int speed, double timeOut) {
   double accelerationDist = 15;
   double minSpeedDist = 0;
 
-  double dynSpeed = 0;
+  double dynSpeed = speed;
 
 
   if ( dynamicSpeed ) {
@@ -384,7 +391,6 @@ bool ai::driveDist(double dist, bool dynamicSpeed, int speed, double timeOut) {
   } else {
     setVel(-speed);
   }
-
 
   while ( fabs(wantedDistance) > distTraveled && Brain.timer(vex::timeUnits::msec) < endTime ) {
     // Todo: do gear math
@@ -397,6 +403,8 @@ bool ai::driveDist(double dist, bool dynamicSpeed, int speed, double timeOut) {
     double avgRot = ( Fleft + Fright + Bleft + Bright) / 4;
 
     distTraveled += fabs( circumference * avgRot );
+
+    
 
 
     if ( dynamicSpeed ) {
@@ -419,24 +427,28 @@ bool ai::driveDist(double dist, bool dynamicSpeed, int speed, double timeOut) {
       }
     
     
-      cout << " " << endl;
-      cout << remainingDist << endl;
-      cout << percent << endl;
-      cout << dynSpeed << endl;
-
-      if ( dist < 0 ) { setVel(-dynSpeed); } else { setVel(dynSpeed); }
-      
+      //cout << " " << endl;
+      //cout << remainingDist << endl;
+      //cout << percent << endl;
+      //cout << dynSpeed << endl;
     } else {
-      cout << " " << endl;
-      cout << "Dist Traveled: " << distTraveled << endl;
-      cout << "Debug: " << endl;
-      cout << Fleft << " " << Fright << endl;
-      cout << Bleft << " " << Bright << endl;
+      //cout << " " << endl;
+      //cout << "Dist Traveled: " << distTraveled << endl;
+      //cout << "Debug: " << endl;
+      //cout << Fleft << " " << Fright << endl;
+      //cout << Bleft << " " << Bright << endl;
     }
 
 
-
-
+    
+    //if ( fabs(dynSpeed) < 20 ) { offSet = 0;}
+    
+    if ( dist < 0 ) {
+      setVel(-dynSpeed); 
+    } else { 
+      setVel(dynSpeed); 
+    }
+    
     
     leftMotorA.resetRotation();
     rightMotorA.resetRotation();
@@ -447,8 +459,20 @@ bool ai::driveDist(double dist, bool dynamicSpeed, int speed, double timeOut) {
 
   setVel(0);
 
+  cout << "Drive Dist Done" << endl;
+
   return true;
 }
+
+bool ai::sideDrive(int speed, double timeOut) {
+
+  strafeLRL = speed;
+  wait(timeOut, seconds);
+  strafeLRL = 0;
+
+  return true;
+};
+
 
 bool ai::runPath( int pathNum ) {
 
@@ -462,12 +486,8 @@ bool ai::runPath( int pathNum ) {
 
   if ( pathNum == 1 ) {
     //  "Paths/Skills/main.txt",
-    
-    //changeRoller(false);
-    driveDist(120);
-    wait(5, seconds);
-    driveDist(-120, false, 20);
-    //turnTo(45, 5000);
+  
+    driveDist(400);
 
   }
   if ( pathNum == 2 ) {
@@ -477,9 +497,25 @@ bool ai::runPath( int pathNum ) {
   if ( pathNum == 3 ) {
     //  "Paths/Right/GoToRoller.txt",
 
+    
+
+    //driveDist(4, false, 30);
+    driveDist(4);
+    sideDrive(-40, 2);
+    Drivetrain.turnToHeading(180, degrees);
+    wait(1, seconds);
+    driveDist(4);
+    wait(1, seconds);
+    
+
   }
   if ( pathNum == 4 ) {
     //  "Paths/Right/RollerToMid.txt",
+
+    
+    driveDist(-3, false, 30);
+    Drivetrain.turnToHeading(315, degrees);
+    driveDist(75);
 
   }
   if ( pathNum == 5 ) {

@@ -28,7 +28,7 @@ class ai {
     int teamColor = 0;
     int currentTask = -1;
 
-    bool setVel(double vel);
+    bool setVel(double lVel, double rVel = 10000);
 
   public:
     
@@ -43,8 +43,9 @@ class ai {
     void aiError(const char* message);
     void aiDebug(const char* message);
 
-    bool turnTo(int rot, double timeOut = 0, bool relative = false);
+    bool turnTo(int rot, double timeOut = 0);
     bool driveDist(double dist, bool dynamicSpeed = true, int speed = 50, double timeOut = 0);
+    bool sideDrive(int speed, double timeOut);
     
     unsigned int readFile(const char* fileName);
     void writeFile(const char* fileName, unsigned int numToWrite);

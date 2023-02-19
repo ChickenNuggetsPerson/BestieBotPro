@@ -70,7 +70,7 @@ void pneumaticPressed( void ) {
 
   }
 
-};
+}
 
 
 
@@ -112,6 +112,7 @@ competition Competition;
 void pre_auton(void) {
   // Initializing Robot Configuration. DO NOT REMOVE!
   vexcodeInit();
+
 }
 
 /*---------------------------------------------------------------------------*/
@@ -194,6 +195,7 @@ void usercontrol(void) {
 
   replaying = false;
 
+
   LauncherFeeder.setVelocity(0, percent);
   PickerUper.setVelocity(0, percent);
   LauncherGroup.setVelocity(0, percent);
@@ -209,6 +211,8 @@ void usercontrol(void) {
 
 // Once the match is started
 int whenStarted() {
+
+  Controller1.Screen.clearScreen();
 
   // Start the motors with 0% velocity
   LauncherGroup.spin(forward);
@@ -247,7 +251,8 @@ int whenStarted() {
   
   botAi.aiDebug("Homie");
 
-  double nextWarnTime = Brain.timer(vex::timeUnits::msec);
+  double driveNextWarnTime = Brain.timer(vex::timeUnits::msec);
+  double launchNextWarnTime = Brain.timer(vex::timeUnits::msec);
 
   // Loop that controlls the controller's display
   while (true) {
@@ -265,12 +270,15 @@ int whenStarted() {
 
       Controller1.Screen.print("Juice Left: ");
       //                         ^ Inside joke
-      Controller1.Screen.print(Brain.Battery.capacity() - 20);
+      //Controller1.Screen.print(Brain.Battery.capacity() - 20);
+      Controller1.Screen.print(Drivetrain.isMoving());
       Controller1.Screen.newLine();
       Controller1.Screen.print("Drive Temp: ");
       Controller1.Screen.print(Drivetrain.temperature(percent));
       Controller1.Screen.newLine();
-      Controller1.Screen.print("^ Extend");
+      Controller1.Screen.print("Lanch Temp: ");
+      Controller1.Screen.print(LauncherGroup.temperature(vex::temperatureUnits::fahrenheit));
+
    
     }
     if (launchConfirm) {
@@ -288,19 +296,35 @@ int whenStarted() {
     // In testing the motors start to slow down when they get above 70%
 
     // The menu shows for 10 seconds and then will show again after a minute
-    if (Drivetrain.temperature(percent) >= 60 && Brain.timer(vex::timeUnits::msec) > nextWarnTime) {
+    if (Drivetrain.temperature(percent) >= 60 && Brain.timer(vex::timeUnits::msec) > driveNextWarnTime) {
       Controller1.Screen.setCursor(1, 0);
       Controller1.Screen.clearScreen();   
       Controller1.Screen.print("WARNING");
       Controller1.Screen.setCursor(2, 0);
       Controller1.Screen.print("Drivetrain Temp High");
-      Controller1.Screen.setCursor(4, 0);
+      Controller1.Screen.setCursor(3, 0);
       Controller1.Screen.print("Temp: ");
       Controller1.Screen.print(Drivetrain.temperature(percent));
       Controller1.Screen.print("%");   
       Controller1.rumble("....");
-      nextWarnTime = Brain.timer(vex::timeUnits::msec) + 60000;  
-      wait(10, seconds);
+      driveNextWarnTime = Brain.timer(vex::timeUnits::msec) + 60000;  
+      wait(5, seconds);
+    }
+
+
+    if (LauncherGroup.temperature(vex::temperatureUnits::celsius) >= 50 && Brain.timer(vex::timeUnits::msec) > launchNextWarnTime) {
+      Controller1.Screen.setCursor(1, 0);
+      Controller1.Screen.clearScreen();   
+      Controller1.Screen.print("WARNING");
+      Controller1.Screen.setCursor(2, 0);
+      Controller1.Screen.print("Launcher Temp High");
+      Controller1.Screen.setCursor(3, 0);
+      Controller1.Screen.print("Temp: ");
+      Controller1.Screen.print(LauncherGroup.temperature(vex::temperatureUnits::fahrenheit));
+      Controller1.Screen.print("%");   
+      Controller1.rumble("....");
+      launchNextWarnTime = Brain.timer(vex::timeUnits::msec) + 60000;  
+      wait(5, seconds);
     }
   }
 

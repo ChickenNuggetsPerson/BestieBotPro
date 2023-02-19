@@ -3,7 +3,7 @@ using namespace vex;
 extern brain Brain;
 
 // VEXcode devices
-extern drivetrain Drivetrain;
+extern smartdrive Drivetrain;
 extern controller Controller1;
 extern motor_group LauncherGroup;
 extern motor PickerUper;
