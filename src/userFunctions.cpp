@@ -53,10 +53,10 @@ void StartLauncherControl() {
 
     }
     if (runLauncherFeeder == 1) {
-      LauncherFeeder.setVelocity(80, percent);
+      LauncherFeeder.setVelocity(50, percent);
     }
     if (runLauncherFeeder == -1) {
-      LauncherFeeder.setVelocity(-80, percent);
+      LauncherFeeder.setVelocity(-50, percent);
     }
 
     if (runMainFeeder == 0) { PickerUper.setVelocity(0, percent); }
@@ -82,11 +82,10 @@ void buttonYPressed() {
 
 void buttonBPressed() {
   // Launcher Belt Control
-  
-  if (runLauncherFeeder == 0) {
-    runLauncherFeeder = 1;
+  if ( RunLauncher == 0) {
+    RunLauncher = 1;
   } else {
-    runLauncherFeeder = 0;
+    RunLauncher = 0;
   }
 }
 
@@ -100,14 +99,12 @@ void buttonL2Released() {
 
 void buttonR2Pressed() {
   //RunLauncher = 1;
-  if (LauncherGroup.velocity(percent) > 50) {
-    RunLauncher = 0;
-  } else { RunLauncher = 1; }
+  runLauncherFeeder = 1;
 }
 
 void buttonR2Released() {
-  //RunLauncher = 0;
-  //runLauncherFeeder = 0;
+  runLauncherFeeder = 0;
+  RunLauncher = 0;
 }
 
 void buttonR1Pressed() {
@@ -124,4 +121,10 @@ void buttonR1Released() {
 
 void buttonL1Released() {
   runMainFeeder = 0;
+}
+
+void buttonLeftPressed() {
+  RunLauncher = 0;
+  runMainFeeder = 0;
+  runLauncherFeeder = 0;
 }

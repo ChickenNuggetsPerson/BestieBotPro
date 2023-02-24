@@ -236,13 +236,14 @@ bool ai::changeRoller( bool longer ) {
   setVel(0);
   setVel(30);
   
+  wait(0.45, seconds);
+  
+  setVel(0);
+
   if ( longer ) {
-    wait(0.45 * 1.5, seconds);
-  } else {
-    wait(0.45, seconds);
+    wait(0.225, seconds);
   }
 
-  setVel(0);
   PickerUper.setVelocity(0, percent);
 
   return true;
@@ -344,6 +345,8 @@ bool ai::turnTo(int rot, double timeOut) {
 bool ai::driveDist(double dist, bool dynamicSpeed, int speed, double timeOut) {
 
   cout << "Starting Drive Dist" << endl;
+
+  double startHeading = Drivetrain.heading(degrees);
 
   double wantedDistance = dist;
 
@@ -461,6 +464,10 @@ bool ai::driveDist(double dist, bool dynamicSpeed, int speed, double timeOut) {
 
   cout << "Drive Dist Done" << endl;
 
+  cout << "   Drive Dist Error: " << Drivetrain.heading(degrees) - startHeading << endl;
+
+  Drivetrain.turnToHeading(startHeading, degrees);
+
   return true;
 }
 
@@ -487,11 +494,86 @@ bool ai::runPath( int pathNum ) {
   if ( pathNum == 1 ) {
     //  "Paths/Skills/main.txt",
   
-    driveDist(400);
+    changeRoller(true);
+
+    driveDist(-4);
+    Drivetrain.turnToHeading(150, degrees);
+
+    PickerUper.setVelocity(100, percent);
+    driveDist(17);
+
+    Drivetrain.turnToHeading(90, degrees);
+    PickerUper.setVelocity(0, percent);
+
+    driveDist(8);
+
+    changeRoller(true);
+
+    driveDist(-4);
+
+    Drivetrain.turnToHeading(150, degrees);
+
+    driveDist(-17, false, 30);
+
+    Drivetrain.turnToHeading(90, degrees);
+
+    driveDist(-60, false, 40);
+
+    Drivetrain.turnToHeading(90, degrees);
+
+    LauncherGroup.setVelocity(65, percent);
+
+    wait(2.5, seconds);
+
+    LauncherFeeder.setVelocity(65, percent);
+
+    wait(5, seconds);
+
+    LauncherFeeder.setVelocity(0, percent);
+    LauncherGroup.setVelocity(0, percent);
+
+    driveDist(60);
+
+    Drivetrain.turnToHeading(225, degrees);
+
+    sideDrive(40, 0.3);
+
+    Drivetrain.turnToHeading(225, degrees);
+
+    driveDist(24, false, 40);
+    
+    expand();
+    
+    driveDist(-24);
 
   }
   if ( pathNum == 2 ) {
     //  "Paths/Left/Launch.txt",
+
+
+
+    driveDist(-6);
+    sideDrive(50, 0.75);
+    Drivetrain.turnToHeading(-135, degrees);
+    //PickerUper.setVelocity(100, percent);
+    
+    driveDist(20, false, 50);
+    
+    Drivetrain.turnToHeading(-45, degrees);
+    LauncherGroup.setVelocity(70, percent);
+    
+    driveDist(-8, false, 30);
+    Drivetrain.turnToHeading(-21, degrees);
+
+    wait(1, seconds);
+
+    LauncherFeeder.setVelocity(30, percent);
+    
+    wait(10, seconds);
+    
+    LauncherGroup.setVelocity(0, percent);
+    LauncherFeeder.setVelocity(0, percent);
+    PickerUper.setVelocity(0, percent);
 
   }
   if ( pathNum == 3 ) {
@@ -500,11 +582,10 @@ bool ai::runPath( int pathNum ) {
     
 
     //driveDist(4, false, 30);
-    driveDist(4);
-    sideDrive(-40, 2);
-    Drivetrain.turnToHeading(180, degrees);
-    wait(1, seconds);
-    driveDist(4);
+    driveDist(-6);
+    sideDrive(25, 2.9);
+    Drivetrain.turnToHeading(0, degrees);
+    driveDist(3, false, 30);
     wait(1, seconds);
     
 
@@ -512,10 +593,12 @@ bool ai::runPath( int pathNum ) {
   if ( pathNum == 4 ) {
     //  "Paths/Right/RollerToMid.txt",
 
+    wait(0.5, seconds);
     
     driveDist(-3, false, 30);
     Drivetrain.turnToHeading(315, degrees);
-    driveDist(75);
+    driveDist(-75);
+    Drivetrain.turnToHeading(45, degrees);
 
   }
   if ( pathNum == 5 ) {

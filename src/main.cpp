@@ -66,6 +66,17 @@ void pneumaticPressed( void ) {
       wait(2, seconds);
       fnewmatics.set(false);
       fnewmaticsB.set(false);
+
+      int i;
+      for (i = 0; i < 0; i++) {
+        fnewmatics.set(true);
+        fnewmaticsB.set(true);
+        wait(0.1, seconds);
+        fnewmatics.set(false);
+        fnewmaticsB.set(false);
+        wait(0.1, seconds);
+        
+      }
     }
 
   }
@@ -270,8 +281,7 @@ int whenStarted() {
 
       Controller1.Screen.print("Juice Left: ");
       //                         ^ Inside joke
-      //Controller1.Screen.print(Brain.Battery.capacity() - 20);
-      Controller1.Screen.print(Drivetrain.isMoving());
+      Controller1.Screen.print(Brain.Battery.capacity() - 20);
       Controller1.Screen.newLine();
       Controller1.Screen.print("Drive Temp: ");
       Controller1.Screen.print(Drivetrain.temperature(percent));
@@ -331,8 +341,6 @@ int whenStarted() {
   return 0;
 }
 
-
-
 //
 // Main will set up the competition functions and callbacks.
 //
@@ -364,9 +372,23 @@ int main() {
   Controller1.ButtonL1.released(buttonL1Released);
 
   Controller1.ButtonUp.pressed(pneumaticPressed);
+  Controller1.ButtonLeft.pressed(buttonLeftPressed);
 
   // Calibrate Sensor and start main loop
   recalibrate();
+  
+  //if ( LauncherGroup.temperature(vex::temperatureUnits::fahrenheit) < 105 && !Competition.isAutonomous() ) {
+  //  Controller1.Screen.clearScreen();
+  //  Controller1.Screen.setCursor(1, 1);
+  //  Controller1.Screen.print("Launcher Temp");
+  //  Controller1.Screen.setCursor(2, 1);
+  //  Controller1.Screen.print("Is Bellow");
+  //  Controller1.Screen.setCursor(3, 1);
+  //  Controller1.Screen.print("113 Degrees");
+  //  Controller1.rumble("----");
+  //  wait(2, seconds);
+  //}
+
   whenStarted();
 
   // Prevent main from exiting with an infinite loop.

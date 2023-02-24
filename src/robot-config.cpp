@@ -88,6 +88,8 @@ int rc_auto_loop_function_Controller1() {
 
     }
 
+    //if ( replaying ) { strafeLRL = strafeLRL * -1;}
+
     motorFL = strafeFBL - strafeLRL;
     motorFR = strafeFBR + strafeLRL;
 
