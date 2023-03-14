@@ -164,7 +164,6 @@ void ai::aiDebug(const char* message) {
   Brain.Screen.print(message);
   Brain.Screen.setPenColor(vex::color::white);
   cout << "DEBUG: " << message << endl;
-
 }
 
 
@@ -234,7 +233,7 @@ bool ai::changeRoller( bool longer ) {
   }
 
   setVel(0);
-  setVel(30);
+  setVel(20);
   
   wait(0.45, seconds);
   
@@ -379,10 +378,10 @@ bool ai::driveDist(double dist, bool dynamicSpeed, int speed, double timeOut) {
 
   // Dynamic Speed Stuff
 
-  double maxSpeed = 75;
+  double maxSpeed = 90;
   double minSpeed = 15;
   
-  double accelerationDist = 15;
+  double accelerationDist = 8;
   double minSpeedDist = 0;
 
   double dynSpeed = speed;
@@ -505,69 +504,126 @@ bool ai::runPath( int pathNum ) {
     Drivetrain.turnToHeading(90, degrees);
     PickerUper.setVelocity(0, percent);
 
+    driveDist(9);
+
+    changeRoller(true);
+
+    driveDist(-6);
+
+    Drivetrain.turnToHeading(0, degrees);
+
+    driveDist(-55);
+
+    LauncherGroup.spin(fwd, 9, vex::voltageUnits::volt);
+
+    Drivetrain.turnToHeading(5, degrees);
+
+    wait(2, seconds);
+
+    LauncherFeeder.setVelocity(50, percent);
+
+    wait(3, seconds);
+
+    LauncherGroup.spin(fwd, 0, vex::voltageUnits::volt);
+    Drivetrain.turnToHeading(0, degrees);
+    LauncherFeeder.setVelocity(0, percent);
+
+    driveDist(27);
+
+    Drivetrain.turnToHeading(-86, degrees);
+
+    // Pickup 3 long dist 
+
+    
+    //PickerUper.setVelocity(100, percent);
+
+    driveDist(70);
+
+    /*
+    LauncherGroup.spin(fwd, 9, vex::voltageUnits::volt);
+    Drivetrain.turnToHeading(130, degrees);
+
+    wait(2, seconds);
+
+    LauncherFeeder.setVelocity(30, percent);
+
+    wait(4, seconds);
+
+    LauncherGroup.spin(fwd, 0, vex::voltageUnits::volt);
+    LauncherFeeder.setVelocity(0, percent);
+
+  */
+
+    driveDist(10, false);
+    driveDist(-10, false);
+
+    PickerUper.setVelocity(100, percent);
+
+    Drivetrain.turnToHeading(-135, degrees);
+
+    driveDist(70, false);
+
+    PickerUper.setVelocity(0, percent);
+
+    Drivetrain.turnToHeading(-90, degrees);
+
     driveDist(8);
 
     changeRoller(true);
 
     driveDist(-4);
 
-    Drivetrain.turnToHeading(150, degrees);
+    Drivetrain.turnToHeading(125, degrees);
 
-    driveDist(-17, false, 30);
+    PickerUper.setVelocity(100, percent);
 
-    Drivetrain.turnToHeading(90, degrees);
+    driveDist(13);
 
-    driveDist(-60, false, 40);
+    PickerUper.setVelocity(0, percent);
 
-    Drivetrain.turnToHeading(90, degrees);
+    Drivetrain.turnToHeading(180, degrees);
 
-    LauncherGroup.setVelocity(65, percent);
+    driveDist(16);
 
-    wait(2.5, seconds);
+    changeRoller(true);
 
-    LauncherFeeder.setVelocity(65, percent);
+    driveDist(-20);
 
-    wait(5, seconds);
+    Drivetrain.turnToHeading(45, degrees);
 
-    LauncherFeeder.setVelocity(0, percent);
-    LauncherGroup.setVelocity(0, percent);
+    driveDist(20);
 
-    driveDist(60);
-
-    Drivetrain.turnToHeading(225, degrees);
-
-    sideDrive(40, 0.3);
-
-    Drivetrain.turnToHeading(225, degrees);
-
-    driveDist(24, false, 40);
-    
     expand();
-    
-    driveDist(-24);
+
+    driveDist(-20);
 
   }
   if ( pathNum == 2 ) {
     //  "Paths/Left/Launch.txt",
 
-
+    Drivetrain.setTurnVelocity(100, percent);
 
     driveDist(-6);
-    sideDrive(50, 0.75);
-    Drivetrain.turnToHeading(-135, degrees);
-    //PickerUper.setVelocity(100, percent);
+    //sideDrive(50, 0.75);
     
-    driveDist(20, false, 50);
-    
-    Drivetrain.turnToHeading(-45, degrees);
-    LauncherGroup.setVelocity(70, percent);
-    
-    driveDist(-8, false, 30);
-    Drivetrain.turnToHeading(-21, degrees);
+    Drivetrain.turnToHeading(-90, degrees);
 
-    wait(1, seconds);
+    driveDist(15, false, 60);
 
-    LauncherFeeder.setVelocity(30, percent);
+    Drivetrain.turnToHeading(-139, degrees);
+    PickerUper.setVelocity(90, percent);
+    
+    driveDist(20, false, 80);
+  
+    //Drivetrain.turnToHeading(-45, degrees);
+    LauncherGroup.spin(fwd, 11, vex::voltageUnits::volt);
+    
+    //driveDist(-8, false, 40);
+    Drivetrain.turnToHeading(-26, degrees);
+
+    driveDist(-6);
+
+    LauncherFeeder.setVelocity(15, percent);
     
     wait(10, seconds);
     
@@ -579,26 +635,30 @@ bool ai::runPath( int pathNum ) {
   if ( pathNum == 3 ) {
     //  "Paths/Right/GoToRoller.txt",
 
-    
-
     //driveDist(4, false, 30);
-    driveDist(-6);
-    sideDrive(25, 2.9);
+    Drivetrain.setHeading(-90, degrees);
+    driveDist(20, false, 50);
     Drivetrain.turnToHeading(0, degrees);
-    driveDist(3, false, 30);
-    wait(1, seconds);
+    driveDist(5, false, 30);
     
-
   }
   if ( pathNum == 4 ) {
     //  "Paths/Right/RollerToMid.txt",
 
-    wait(0.5, seconds);
     
+    LauncherGroup.spin(fwd, 10, vex::voltageUnits::volt);
+
     driveDist(-3, false, 30);
-    Drivetrain.turnToHeading(315, degrees);
-    driveDist(-75);
-    Drivetrain.turnToHeading(45, degrees);
+    Drivetrain.turnToHeading(130, degrees);
+    PickerUper.setVelocity(100, percent);
+    driveDist(37, false, 70);
+    
+    Drivetrain.turnToHeading(30, degrees);
+    PickerUper.setVelocity(0, percent);
+
+    driveDist(-10, false, 50);
+
+    LauncherFeeder.setVelocity(20, percent);
 
   }
   if ( pathNum == 5 ) {

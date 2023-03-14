@@ -83,8 +83,6 @@ void pneumaticPressed( void ) {
 
 }
 
-
-
 void recalibrate() {
   if (gyroSensor.installed()) {
     Brain.Screen.newLine();
@@ -102,7 +100,6 @@ void recalibrate() {
     Brain.Screen.print("Inertial Sensor Not Installed");
   }
 }
-
 
 
 // A global instance of competition
@@ -236,6 +233,23 @@ int whenStarted() {
 
   fnewmatics.set(false);
   fnewmaticsB.set(false);
+
+  if (Controller1.ButtonY.pressing()) {
+    LauncherGroup.spin(fwd, 100, voltageUnits::volt);
+    replaying = true;
+    while (LauncherGroup.temperature(vex::temperatureUnits::fahrenheit) < 95 && !Controller1.ButtonLeft.pressing()) {
+      Controller1.Screen.clearScreen();
+      Controller1.Screen.setCursor(1, 1);
+      Controller1.Screen.print("Heating Motor");
+      Controller1.Screen.newLine();
+      Controller1.Screen.print("Temp: ");
+      Controller1.Screen.print(LauncherGroup.temperature(vex::temperatureUnits::fahrenheit));
+      
+      wait(0.5, seconds);
+    }
+    replaying = false;
+    LauncherGroup.setVelocity(0, percent);
+  }
   
   // ^^ Inside joke in the team 
 
@@ -268,7 +282,7 @@ int whenStarted() {
   // Loop that controlls the controller's display
   while (true) {
     
-    wait(0.5, seconds);
+    wait(0.25, seconds);
 
     Controller1.Screen.setCursor(1, 0);
     Controller1.Screen.clearScreen();
@@ -282,6 +296,10 @@ int whenStarted() {
       Controller1.Screen.print("Juice Left: ");
       //                         ^ Inside joke
       Controller1.Screen.print(Brain.Battery.capacity() - 20);
+
+      Controller1.Screen.print("  ");
+      Controller1.Screen.print(LauncherGroup.velocity(rpm));
+
       Controller1.Screen.newLine();
       Controller1.Screen.print("Drive Temp: ");
       Controller1.Screen.print(Drivetrain.temperature(percent));
@@ -301,6 +319,41 @@ int whenStarted() {
       Controller1.Screen.print("< Cancel   Confirm >");
 
     }
+
+    
+    if (Controller1.ButtonRight.pressing()) {
+      bool alignMenu = true;
+      Controller1.Screen.clearScreen();
+      Controller1.Screen.setCursor(1, 1);
+      Controller1.Screen.print("Choose Alignment Pos");
+      Controller1.rumble("..");
+
+      int headingOffset = 0;
+      if ( botAi.startPos == 1 ) { headingOffset = -270; }
+
+      wait(1, seconds);
+
+      while (alignMenu) {
+
+        if (Controller1.ButtonRight.pressing()) {
+          Drivetrain.turnToHeading(-90 + headingOffset, degrees);
+          alignMenu = false;
+        }
+
+        if (Controller1.ButtonDown.pressing()) {
+          Drivetrain.turnToHeading(-45 + headingOffset, degrees);
+          alignMenu = false;
+        }
+
+        if (Controller1.ButtonLeft.pressing()) {
+          Drivetrain.turnToHeading(0 + headingOffset, degrees);
+          alignMenu = false;
+        }
+
+        wait(0.3, seconds);
+      }
+    }
+
 
     // Warn the driver when the Drivetrain temperature is above 65%
     // In testing the motors start to slow down when they get above 70%
@@ -373,6 +426,8 @@ int main() {
 
   Controller1.ButtonUp.pressed(pneumaticPressed);
   Controller1.ButtonLeft.pressed(buttonLeftPressed);
+
+  
 
   // Calibrate Sensor and start main loop
   recalibrate();

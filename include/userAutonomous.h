@@ -14,9 +14,6 @@ class ai {
     bool changeRoller( bool longer ); // 10
     bool expand();                    // 11
 
-
-    int startPos;
-
     bool isWhite(float val);
 
     // Private Methods
@@ -32,6 +29,8 @@ class ai {
 
   public:
     
+    int startPos;
+
     // Methods
     ai( int fallbackColor );
     void init();

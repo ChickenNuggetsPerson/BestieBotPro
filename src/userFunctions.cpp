@@ -19,10 +19,12 @@ void StartLauncherControl() {
 
   LauncherGroup.setStopping(coast);
   
-  double maxVel = 65;
+  double maxVel = 80; // 65 Normally
 
   while (true) {
     wait(0.05, seconds);
+
+    if (replaying) {break;}
 
     if (RunLauncher == 1) {
       LauncherVel = LauncherVel + 5.0;
@@ -38,13 +40,15 @@ void StartLauncherControl() {
     
     if (!Controller1.ButtonDown.pressing()) {
       if (LauncherVel == 0) {LauncherGroup.stop(coast);} else {
-        LauncherGroup.spin(fwd);
-        LauncherGroup.setVelocity(LauncherVel, percent);
+        //LauncherGroup.spin(fwd);
+        //LauncherGroup.setVelocity(LauncherVel, percent);
+        LauncherGroup.spin(fwd, (LauncherVel / 100) * 12, vex::voltageUnits::volt);
       } 
       
     } else {
       LauncherGroup.spin(fwd);
-      LauncherGroup.setVelocity(-50, percent);
+      //LauncherGroup.setVelocity(-50, percent);
+      LauncherGroup.spin(reverse, (50 / 100) * 12, vex::voltageUnits::volt);
     }
 
 

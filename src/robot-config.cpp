@@ -12,7 +12,6 @@ brain  Brain;
 inertial gyroSensor = inertial(PORT15);
 
 
-
 motor leftMotorA = motor(PORT11, ratio18_1, true);
 motor leftMotorB = motor(PORT12, ratio18_1, true);
 motor_group LeftDriveSmart = motor_group(leftMotorA, leftMotorB);
@@ -102,6 +101,11 @@ int rc_auto_loop_function_Controller1() {
       leftMotorB.spin(fwd);
       rightMotorA.spin(fwd);
       rightMotorB.spin(fwd);
+
+      //leftMotorA.spin(fwd, (motorFL / 100) * 12, vex::voltageUnits::volt);
+      //leftMotorB.spin(fwd, (motorBL / 100) * 12, vex::voltageUnits::volt);
+      //rightMotorA.spin(fwd, (motorFR / 100) * 12, vex::voltageUnits::volt);
+      //rightMotorB.spin(fwd, (motorBR / 100) * 12, vex::voltageUnits::volt);
 
       leftMotorA.setVelocity(motorFL, percent);
       leftMotorB.setVelocity(motorBL, percent);
