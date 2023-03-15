@@ -465,8 +465,10 @@ bool ai::driveDist(double dist, bool dynamicSpeed, int speed, double timeOut) {
 
   cout << "   Drive Dist Error: " << Drivetrain.heading(degrees) - startHeading << endl;
 
-  Drivetrain.turnToHeading(startHeading, degrees);
-
+  if ( fabs( startHeading - Drivetrain.heading(degrees)) > 5 && fabs(dist) > 15) {
+    Drivetrain.turnToHeading(startHeading, degrees);  
+  }
+  
   return true;
 }
 
@@ -603,7 +605,7 @@ bool ai::runPath( int pathNum ) {
 
     Drivetrain.setTurnVelocity(100, percent);
 
-    driveDist(-6);
+    driveDist(-5);
     //sideDrive(50, 0.75);
     
     Drivetrain.turnToHeading(-90, degrees);
@@ -616,15 +618,21 @@ bool ai::runPath( int pathNum ) {
     driveDist(20, false, 80);
   
     //Drivetrain.turnToHeading(-45, degrees);
-    LauncherGroup.spin(fwd, 11, vex::voltageUnits::volt);
+    LauncherGroup.spin(fwd, 10, vex::voltageUnits::volt);
     
     //driveDist(-8, false, 40);
-    Drivetrain.turnToHeading(-26, degrees);
+    Drivetrain.turnToHeading(-33, degrees);
 
-    driveDist(-6);
+    driveDist(-4);
 
-    LauncherFeeder.setVelocity(15, percent);
+    wait(2, seconds);
+
+    LauncherFeeder.setVelocity(30, percent);
     
+    wait(4, seconds);
+
+    LauncherGroup.spin(fwd, 11, vex::voltageUnits::volt);
+
     wait(10, seconds);
     
     LauncherGroup.setVelocity(0, percent);
@@ -656,7 +664,9 @@ bool ai::runPath( int pathNum ) {
     Drivetrain.turnToHeading(30, degrees);
     PickerUper.setVelocity(0, percent);
 
-    driveDist(-10, false, 50);
+    //driveDist(-4, false, 50);
+
+    wait(2, seconds);
 
     LauncherFeeder.setVelocity(20, percent);
 

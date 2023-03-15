@@ -235,20 +235,27 @@ int whenStarted() {
   fnewmaticsB.set(false);
 
   if (Controller1.ButtonY.pressing()) {
-    LauncherGroup.spin(fwd, 100, voltageUnits::volt);
     replaying = true;
-    while (LauncherGroup.temperature(vex::temperatureUnits::fahrenheit) < 95 && !Controller1.ButtonLeft.pressing()) {
+    while (LauncherGroup.temperature(vex::temperatureUnits::fahrenheit) < 110 && !Controller1.ButtonLeft.pressing()) {
+      LauncherGroup.spin(fwd, 100, voltageUnits::volt);
       Controller1.Screen.clearScreen();
       Controller1.Screen.setCursor(1, 1);
       Controller1.Screen.print("Heating Motor");
       Controller1.Screen.newLine();
       Controller1.Screen.print("Temp: ");
       Controller1.Screen.print(LauncherGroup.temperature(vex::temperatureUnits::fahrenheit));
-      
-      wait(0.5, seconds);
+      wait(5, seconds);
+      LauncherGroup.spin(fwd, -100, voltageUnits::volt);
+      Controller1.Screen.clearScreen();
+      Controller1.Screen.setCursor(1, 1);
+      Controller1.Screen.print("Heating Motor");
+      Controller1.Screen.newLine();
+      Controller1.Screen.print("Temp: ");
+      Controller1.Screen.print(LauncherGroup.temperature(vex::temperatureUnits::fahrenheit));
+      wait(5, seconds);
     }
     replaying = false;
-    LauncherGroup.setVelocity(0, percent);
+    LauncherGroup.spin(fwd, 0, voltageUnits::volt);
   }
   
   // ^^ Inside joke in the team 
