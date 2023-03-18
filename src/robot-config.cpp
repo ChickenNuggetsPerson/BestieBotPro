@@ -8,24 +8,26 @@ using code = vision::code;
 brain  Brain;
 
 // VEXcode device constructors
-motor leftMotorA = motor(PORT11, ratio36_1, false);
-motor leftMotorB = motor(PORT12, ratio36_1, false);
+
+inertial gyroSensor = inertial(PORT15);
+
+
+motor leftMotorA = motor(PORT11, ratio18_1, true);
+motor leftMotorB = motor(PORT12, ratio18_1, true);
 motor_group LeftDriveSmart = motor_group(leftMotorA, leftMotorB);
-motor rightMotorA = motor(PORT20, ratio36_1, true);
-motor rightMotorB = motor(PORT19, ratio36_1, true);
+motor rightMotorA = motor(PORT20, ratio18_1, false);
+motor rightMotorB = motor(PORT19, ratio18_1, false);
 motor_group RightDriveSmart = motor_group(rightMotorA, rightMotorB);
-drivetrain Drivetrain = drivetrain(LeftDriveSmart, RightDriveSmart, 319.19, 254, 254, mm, 1);
+smartdrive Drivetrain = smartdrive(LeftDriveSmart, RightDriveSmart, gyroSensor, 319.19, 254, 254, mm, 1);
 controller Controller1 = controller(primary);
-motor LauncherGroupMotorA = motor(PORT17, ratio6_1, true);
+motor LauncherGroupMotorA = motor(PORT17, ratio6_1, false);
 motor LauncherGroupMotorB = motor(PORT18, ratio6_1, true);
 motor_group LauncherGroup = motor_group(LauncherGroupMotorA, LauncherGroupMotorB);
 motor PickerUper = motor(PORT16, ratio18_1, false);
-motor LauncherFeeder = motor(PORT13, ratio36_1, false);
+motor LauncherFeeder = motor(PORT13, ratio18_1, false);
 limit DiskLimitSwitch = limit(Brain.ThreeWirePort.B);
 digital_out fnewmatics = digital_out(Brain.ThreeWirePort.G);
 digital_out fnewmaticsB = digital_out(Brain.ThreeWirePort.H);
-
-
 
 
 int motorFL = 0;
@@ -38,10 +40,7 @@ int strafeFBR = 0;
 int strafeLRL = 0;
 int strafeLRR = 0;
 
-
-
 bool replaying = false;
-
 
 // VEXcode generated functions
 // define variable for remote controller enable/disable
@@ -54,10 +53,6 @@ bool DrivetrainRNeedsToBeStopped_Controller1 = true;
 int rc_auto_loop_function_Controller1() {
   // process the controller input every 20 milliseconds
   // update the motors based on the input values
-
-
-
-
 
   leftMotorA.spin(fwd);
   leftMotorB.spin(fwd);
@@ -77,12 +72,13 @@ int rc_auto_loop_function_Controller1() {
       // left = Axis3 + Axis1
       // right = Axis3 - Axis1
 
-      strafeFBL = Controller1.Axis3.position();
-      strafeFBR = Controller1.Axis2.position();
+      if (!gyroSensor.isCalibrating()) {
+        strafeFBL = Controller1.Axis3.position();
+        strafeFBR = Controller1.Axis2.position();
 
-      strafeLRL = - Controller1.Axis4.position();
-      strafeLRR = Controller1.Axis1.position();
-
+        strafeLRL = - Controller1.Axis4.position();
+        strafeLRR = Controller1.Axis1.position();
+      }
 
       if (strafeFBL < deadzone && strafeFBL > -deadzone) { strafeFBL = 0; }
       if (strafeFBR < deadzone && strafeFBR > -deadzone) { strafeFBR = 0; }
@@ -91,26 +87,33 @@ int rc_auto_loop_function_Controller1() {
 
     }
 
+    //if ( replaying ) { strafeLRL = strafeLRL * -1;}
 
-    
     motorFL = strafeFBL - strafeLRL;
     motorFR = strafeFBR + strafeLRL;
 
     motorBL = strafeFBL + strafeLRL;
     motorBR = strafeFBR - strafeLRL;
+
+    if ( !Drivetrain.isMoving() ) {
+
+      leftMotorA.spin(fwd);
+      leftMotorB.spin(fwd);
+      rightMotorA.spin(fwd);
+      rightMotorB.spin(fwd);
+
+      //leftMotorA.spin(fwd, (motorFL / 100) * 12, vex::voltageUnits::volt);
+      //leftMotorB.spin(fwd, (motorBL / 100) * 12, vex::voltageUnits::volt);
+      //rightMotorA.spin(fwd, (motorFR / 100) * 12, vex::voltageUnits::volt);
+      //rightMotorB.spin(fwd, (motorBR / 100) * 12, vex::voltageUnits::volt);
+
+      leftMotorA.setVelocity(motorFL, percent);
+      leftMotorB.setVelocity(motorBL, percent);
+      rightMotorA.setVelocity(motorFR, percent);
+      rightMotorB.setVelocity(motorBR, percent);
+      
+    }
     
-
-    int changePercent = 15;
-
-    if (motorBL > changePercent || motorBL < - changePercent) {if (motorBL > 0) {motorBL = motorBL - changePercent;} else {motorBL = motorBL + changePercent;}}
-    if (motorBR > changePercent || motorBR < - changePercent) {if (motorBR > 0) {motorBR = motorBR - changePercent;} else {motorBR = motorBR + changePercent;}}
-
-
-    leftMotorA.setVelocity(motorFL, percent);
-    leftMotorB.setVelocity(motorBL, percent);
-    rightMotorA.setVelocity(motorFR, percent);
-    rightMotorB.setVelocity(motorBR, percent);
-
     // wait before repeating the process
     wait(20, msec);
   }
@@ -122,5 +125,9 @@ int rc_auto_loop_function_Controller1() {
  * This should be called at the start of your int main function.
  */
 void vexcodeInit( void ) {
+
+  Drivetrain.setTurnVelocity(75, percent);
+  Drivetrain.setTurnThreshold(2);
+
   task rc_auto_loop_task_Controller1(rc_auto_loop_function_Controller1);
 }

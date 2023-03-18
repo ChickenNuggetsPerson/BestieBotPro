@@ -56,31 +56,14 @@ void ai::init() {
       if ( rollers == 1 ) { personality[1] = 10; }
 
       if ( startPos == 0 ) {
-       if ( launch == 1 ) { personality[2] = 1;}
+       if ( launch == 1 ) { personality[2] = 2;}
       } else {
-        if ( rollers == 1 ) { personality[0] = 2;  }
-        if ( rollers == 1 && launch == 1) { personality[3] = 3; }
+        if ( rollers == 1 ) { personality[0] = 3;  }
+        if ( rollers == 1 && launch == 1) { personality[3] = 4; }
       }
 
     } else {
-      // Skills check programing 
-      // All skills paths are stored as numbers above 100
-    
-      // Todo: build a smart system that detects what skills path files exists and configures correctly
-
-
-      // Current Skills Paths:
-      //  0: Drive to corner 
-      //  1: 
-
-
-      personality[1] = 13; // Skills roller code. For whatever reason, skills fields have different roller heights
-      personality[2] = 100; // Run skills path in pathNames array
-      //personality[3] = 13;
-      //personality[4] = 101;
-      personality[5] = 11; // Expand
-      personality[6] = 101;
-
+      personality[2] = 1;
     }
 
     // Code for displaying the current config on the brain screen
@@ -168,7 +151,7 @@ void ai::aiError(const char* message) {
   Brain.Screen.setPenColor(vex::color::red);
   Brain.Screen.print(message);
   Brain.Screen.setPenColor(vex::color::white);
-  
+  cout << "ERROR: " << message << endl;
 }
 
 // Displays debug message on brain screen
@@ -180,7 +163,7 @@ void ai::aiDebug(const char* message) {
   Brain.Screen.setPenColor(vex::color::purple);
   Brain.Screen.print(message);
   Brain.Screen.setPenColor(vex::color::white);
-
+  cout << "DEBUG: " << message << endl;
 }
 
 
@@ -205,6 +188,11 @@ bool ai::iterate() {
 // Runs the behavior at the coresponding personality index
 bool ai::runTask( int taskNum ) {
 
+  strafeFBL = 0;
+  strafeFBR = 0;
+  strafeLRL = 0;
+  strafeLRR = 0;
+
   // Debug Messages
   aiDebug("Running Task: ");
   Brain.Screen.print( taskNum );
@@ -213,12 +201,8 @@ bool ai::runTask( int taskNum ) {
 
   // Run the specified behavior
   if (personality[taskNum] == 0) { return true; }; // If 0 is inputed, then it will skip
-  if (personality[taskNum] >= 100) { return replay(skillsPathNames[personality[taskNum] - 100]); }
-  if (personality[taskNum] == 10) { return changeRoller( false ); };
-  if (personality[taskNum] == 11) { return expand();}
-  if (personality[taskNum] == 12) {return replay(pathNames[0]); }
-  if (personality[taskNum] == 13) { return changeRoller( true ); }; // Longer roller change to true 
-  if (personality[taskNum] >= 0 && personality[taskNum] < 10) { return replay(pathNames[personality[taskNum]]); }
+  if (personality[taskNum] > 0 && personality[taskNum] < 10) { return runPath(personality[taskNum]); }
+  if (personality[taskNum] == 10) { return changeRoller(false);}
   
   return false;
   
@@ -240,6 +224,7 @@ bool ai::changeRoller( bool longer ) {
 
   Brain.Screen.newLine();
   Brain.Screen.print("Starting Roller Code");
+  cout << "Changing Roller" << endl;
 
   if ( longer ) {
     PickerUper.setVelocity(100, percent);
@@ -248,17 +233,16 @@ bool ai::changeRoller( bool longer ) {
   }
 
   setVel(0);
-  setVel(30);
+  setVel(20);
   
+  wait(0.45, seconds);
+  
+  setVel(0);
 
   if ( longer ) {
-    wait(0.45 * 1.5, seconds);
-  } else {
-    wait(0.45, seconds);
+    wait(0.225, seconds);
   }
-  
 
-  setVel(0);
   PickerUper.setVelocity(0, percent);
 
   return true;
@@ -282,226 +266,415 @@ bool ai::expand() {
 }
 
 
-bool ai::setVel(int vel) {
+bool ai::setVel(double lVel, double rVel) {
 
-  strafeFBL = vel;
-  strafeFBR = vel;
-
+  if ( rVel == 10000) {
+    strafeFBL = lVel;
+    strafeFBR = lVel;
+  } else {
+    strafeFBL = lVel;
+    strafeFBR = rVel;
+  }
+  
   return true;
 }
 
+bool ai::turnTo(int rot, double timeOut) {
 
-// Code for replaying the autonomous recordings
-// After a lot of testing this is the final* version of the replay system
-// The program reads the values from the file and then apply the velocities to the motors
+  // Trash code, just use the Drivetrain.turnToHeading()
 
-//    After some testing, I found that the sd card takes ~10ms to read and write a line but at 
-//  random the sd card takes +100ms to write a line for whatever reason. To account for this, the 
-//  system records how long it took to write the line during the recording process and during the 
-//  replay process it takes into account how long it took to read and write the line and
-//  then waits the correct amount of time to keep the replay in sync with the recording.
-
-bool ai::replay( const char* pathFile) {
+  if (!gyroSensor.installed()) {aiError("Inertial Sensor Not Installed"); Controller1.rumble("--"); return false;}
   
-  if ( !Brain.SDcard.exists(pathFile) ) { 
-    aiDebug("File does not Exist");
-    return true;
-   }
-  
-  // open the file for reading
-  std::ifstream input_file(pathFile);
+  // Todo: Tune these values
+  double pidP = 1; // Tune First
+  double pidI = 0; // Tune Last
+  double pidD = 0; // Tune Second
 
-  Brain.Screen.setPenColor(vex::color::white);
-  
-  int launchVel = 0;
+  int error;
+  int prevError = 0;
+  int derivative;
+  int totalError = 0;
 
-  double readDeltaTime = 0;
-  double deltaTime;
+  gyroSensor.resetRotation();
+  gyroSensor.resetHeading();
 
-  bool debug = true;
+  int desiredHeading = rot;
 
-  double avgDelta = 0;
-  double avgReadDelta = 0;
-  double avgWaitTime = 0;
-  double highestDelta = 0;
-  double highestReadDelta = 0;
-  int totalLines = 0;
+  //desiredHeading = desiredHeading & 360;
 
-  replaying = true;
-
-  while (true) {
-
-    double startTime = Brain.timer(vex::timeUnits::msec);
-
-
-    //if ( LeftDriveSmart.position(vex::rotationUnits::rev) != lastLeftPos ) { LeftDriveSmart.rotateTo(lastLeftPos, vex::rotationUnits::rev); }
-    //if ( RightDriveSmart.position(vex::rotationUnits::rev) != lastRightPos ) { RightDriveSmart.rotateTo(lastRightPos, vex::rotationUnits::rev); }
-
-    // read a line from the file
-    std::string line;
-    std::getline(input_file, line);
-
-    // check if the end of the file has been reached
-    if (input_file.eof()) {
-      // reset the file stream to the beginning of the file
-      input_file.clear();
-      input_file.seekg(0, std::ios::beg);
-
-      strafeFBL = 0;
-      strafeFBR = 0;
-      strafeLRL = 0;
-      strafeLRR = 0;
-
-      replaying = false;
-
-
-      PickerUper.setVelocity(0, percent);
-      LauncherFeeder.setVelocity(0, percent);
-      LauncherGroup.setVelocity(0, percent);
-
-      int i;
-      for ( i = 0; i < 20; i ++ ) { cout << "" << endl; }
-
-      cout << "Replaying Done: " << endl;
-      cout << "" << endl;
-      cout << "Average Writing Delta: " << ( avgReadDelta / totalLines ) << endl;
-      cout << "Average Reading Delta: " << ( avgDelta / totalLines ) << endl;
-      cout << "Average Waiting Delta: " << ( avgWaitTime / totalLines ) << endl;
-      cout << "" << endl;
-      cout << "Highest Writing Delta: " << highestReadDelta << endl;
-      cout << "Highest Reading Delta: " << highestDelta << endl;
-      cout << "" << endl;
-
-      //wait(10, seconds);
-      break;
-    }
-
-    totalLines ++;
-
-    // parse the values from the line
-    std::stringstream ss(line);
-
-    unsigned int runlaunch, runlaunchfeed, runmainfeed, fbl, fbr, lrl, lrr = 0;
-
-    std::string fbl_str;
-    std::getline(ss, fbl_str, ',');
-    std::istringstream fblStream(fbl_str.c_str());
-    fblStream >> fbl;
-    strafeFBL = fbl;
-
-    std::string fbr_str;
-    std::getline(ss, fbr_str, ',');
-    std::istringstream fbrStream(fbr_str.c_str());
-    fbrStream >> fbr;
-    strafeFBR = fbr;
-
-    std::string lrl_str;
-    std::getline(ss, lrl_str, ',');
-    std::istringstream lrlStream(lrl_str.c_str());
-    lrlStream >> lrl;
-    strafeLRL = - lrl;
-
-    std::string lrr_str;
-    std::getline(ss, lrr_str, ',');
-    std::istringstream lrrStream(lrr_str.c_str());
-    lrrStream >> lrr;
-    strafeLRR = lrr;
-
-    std::string runlaunch_str;
-    std::getline(ss, runlaunch_str, ',');
-    std::istringstream runlaunchStream(runlaunch_str.c_str());
-    runlaunchStream >> runlaunch;
-
-
-    std::string runlaunchfeed_str;
-    std::getline(ss, runlaunchfeed_str, ',');
-    std::istringstream runlaunchfeedStream(runlaunchfeed_str.c_str());
-    runlaunchfeedStream >> runlaunchfeed;
-
-
-    std::string runmainfeed_str;
-    std::getline(ss, runmainfeed_str, ',');
-    std::istringstream runmainfeedStream(runmainfeed_str.c_str());
-    runmainfeedStream >> runmainfeed;
-    
-
-    std::string readDeltaTime_str;
-    std::getline(ss, readDeltaTime_str, ',');
-    std::istringstream readDeltaTimeStream(readDeltaTime_str.c_str());
-    readDeltaTimeStream >> readDeltaTime;
-
-
-
-
-    if (runlaunch == 1) {
-      launchVel = launchVel + 5.0;
-    } else if (runlaunch == 0 ) {
-      launchVel = launchVel + -5.0;
-    }
-    if (launchVel > 100) {
-      launchVel = 100;
-    }
-    if (launchVel < 0.0) {
-      launchVel = 0.0;
-    }
-
-    LauncherGroup.setVelocity(launchVel, percent);
-    LauncherFeeder.setVelocity(runlaunchfeed * 100, percent);
-    if ( runmainfeed > 0 ) { PickerUper.setVelocity(100, percent); }
-    if ( runmainfeed < 0 ) { PickerUper.setVelocity(-100, percent); }
-    if ( runmainfeed == 0 ) { PickerUper.setVelocity(0, percent); } 
-    
-
-    if (debug) {
-
-      Brain.Screen.clearScreen();
-      Brain.Screen.setCursor(1, 5);
-      Brain.Screen.print("FL: ");
-      //Brain.Screen.print(motorFL);
-      Brain.Screen.print("  FR: ");
-     // Brain.Screen.print(motorFR);
-      Brain.Screen.print("  BL: ");
-      //Brain.Screen.print(motorBL);
-      Brain.Screen.print("  BR: ");
-      //Brain.Screen.print(motorBR);  
-      Brain.Screen.setCursor(2, 5);
-      Brain.Screen.print("RunLaunch: ");
-      Brain.Screen.print(runlaunch); 
-      Brain.Screen.setCursor(3, 5);
-      Brain.Screen.print("RunLaunchFeed: ");
-      Brain.Screen.print(runlaunchfeed); 
-      Brain.Screen.setCursor(4, 5);
-      Brain.Screen.print("RunMainFeed: ");
-      Brain.Screen.print(runmainfeed);
-
-      Brain.Screen.setCursor(5, 5);
-      Brain.Screen.print("Delata: ");
-      Brain.Screen.print(readDeltaTime);
-      Brain.Screen.print("   ");
-      Brain.Screen.print(deltaTime);
-      Brain.Screen.print("   ");
-      Brain.Screen.print(readDeltaTime - deltaTime);
-
-      Brain.Screen.setCursor(6, 5);
-      Brain.Screen.print("Lancher Vel: ");
-      //Brain.Screen.print(LauncherVel);    
- 
-    }
-
-    double endTime = Brain.timer(vex::timeUnits::msec);
-    deltaTime = endTime - startTime;
-
-    Brain.Screen.setCursor(7, 5);
-    Brain.Screen.print(readDeltaTime - deltaTime);
-    
-    avgDelta = avgDelta + deltaTime;
-    avgReadDelta = avgReadDelta + readDeltaTime;
-    avgWaitTime = avgWaitTime + ( readDeltaTime - deltaTime ) ;
-
-    if ( deltaTime > highestDelta ) { highestDelta = deltaTime; }
-    if ( readDeltaTime > highestReadDelta ) { highestReadDelta = readDeltaTime; }
-
-    vex::task::sleep(fabs(readDeltaTime - deltaTime));
+  double endTime;
+  if ( timeOut == 0) {
+    endTime = 999999999999999999;
+  } else {
+    endTime = Brain.timer(vex::timeUnits::msec) + ( timeOut * 1000 );
   }
+
+  int precision = 1;
+
+  int motorPower = 0 + precision;
+
+  while (true && Brain.timer(vex::timeUnits::msec) < endTime) {
+
+    int currentHeading = gyroSensor.angle(vex::rotationUnits::deg);
+
+    error = currentHeading - desiredHeading;
+    derivative = error - prevError;
+
+    totalError += error;
+
+    motorPower = ( error * pidP + derivative * pidD + totalError * pidI);
+
+    strafeFBL = -motorPower;
+    strafeFBR = motorPower;
+    
+    
+    cout << "PID OUT: " << motorPower << endl;
+    //cout << "Heading: " << gyroSensor.heading(vex::rotationUnits::deg) << endl;
+    cout << "Angle: " << gyroSensor.angle(vex::rotationUnits::deg) << endl;
+
+
+    prevError = error;
+    vex::task::sleep(20);
+  }
+
+
+  return true;
+};
+
+bool ai::driveDist(double dist, bool dynamicSpeed, int speed, double timeOut) {
+
+  cout << "Starting Drive Dist" << endl;
+
+  double startHeading = Drivetrain.heading(degrees);
+
+  double wantedDistance = dist;
+
+  if ( dist > 0 ) {
+    wantedDistance = dist - 1;
+  } else {
+    wantedDistance = dist + 1;
+  } 
+
+  double pi = 3.14;
+  double radius = 2;
+  double circumference = 2 * pi * radius;
+
+
+
+  double distTraveled = 0;
+
+  leftMotorA.resetRotation();
+  rightMotorA.resetRotation();
+  leftMotorB.resetRotation();
+  rightMotorB.resetRotation();
+
+  double endTime;
+  if ( timeOut == 0) {
+    endTime = 999999999999999999;
+  } else {
+    endTime = Brain.timer(vex::timeUnits::msec) + ( timeOut * 1000 );
+  }
+
+
+  // Dynamic Speed Stuff
+
+  double maxSpeed = 90;
+  double minSpeed = 15;
+  
+  double accelerationDist = 8;
+  double minSpeedDist = 0;
+
+  double dynSpeed = speed;
+
+
+  if ( dynamicSpeed ) {
+  } else if (wantedDistance > 0) {
+    setVel(speed);
+  } else {
+    setVel(-speed);
+  }
+
+  while ( fabs(wantedDistance) > distTraveled && Brain.timer(vex::timeUnits::msec) < endTime ) {
+    // Todo: do gear math
+    double Fleft = leftMotorA.rotation(vex::rotationUnits::rev);
+    double Fright = rightMotorA.rotation(vex::rotationUnits::rev);
+
+    double Bleft = leftMotorB.rotation(vex::rotationUnits::rev);
+    double Bright = rightMotorB.rotation(vex::rotationUnits::rev);
+
+    double avgRot = ( Fleft + Fright + Bleft + Bright) / 4;
+
+    distTraveled += fabs( circumference * avgRot );
+
+    
+
+
+    if ( dynamicSpeed ) {
+      double remainingDist = fabs(distTraveled - fabs(wantedDistance));
+
+      double percent = 0;
+
+      if ( fabs(distTraveled) < accelerationDist ) {
+        // Initial acceleraction
+        percent = fabs( distTraveled / accelerationDist );
+        if ( percent < 0.2 ) { percent = 0.2;}
+        dynSpeed = percent * maxSpeed;      
+      } else {
+        // Handle slowing down
+        percent = ( remainingDist - minSpeedDist ) / ( accelerationDist - minSpeedDist );
+        dynSpeed = percent * maxSpeed;
+
+        if (dynSpeed > maxSpeed) { dynSpeed = maxSpeed; }
+        if (dynSpeed < minSpeed) { dynSpeed = minSpeed; }
+      }
+    
+    
+      //cout << " " << endl;
+      //cout << remainingDist << endl;
+      //cout << percent << endl;
+      //cout << dynSpeed << endl;
+    } else {
+      //cout << " " << endl;
+      //cout << "Dist Traveled: " << distTraveled << endl;
+      //cout << "Debug: " << endl;
+      //cout << Fleft << " " << Fright << endl;
+      //cout << Bleft << " " << Bright << endl;
+    }
+
+
+    
+    //if ( fabs(dynSpeed) < 20 ) { offSet = 0;}
+    
+    if ( dist < 0 ) {
+      setVel(-dynSpeed); 
+    } else { 
+      setVel(dynSpeed); 
+    }
+    
+    
+    leftMotorA.resetRotation();
+    rightMotorA.resetRotation();
+    leftMotorB.resetRotation();
+    rightMotorB.resetRotation();
+    wait(10, msec);
+  }  
+
+  setVel(0);
+
+  cout << "Drive Dist Done" << endl;
+
+  cout << "   Drive Dist Error: " << Drivetrain.heading(degrees) - startHeading << endl;
+
+  if ( fabs( startHeading - Drivetrain.heading(degrees)) > 5 && fabs(dist) > 15) {
+    Drivetrain.turnToHeading(startHeading, degrees);  
+  }
+  
+  return true;
+}
+
+bool ai::sideDrive(int speed, double timeOut) {
+
+  strafeLRL = speed;
+  wait(timeOut, seconds);
+  strafeLRL = 0;
+
+  return true;
+};
+
+
+bool ai::runPath( int pathNum ) {
+
+    //const char* pathNames[5] = {
+    //  "Paths/Skills/main.txt",
+    //  "Paths/Left/Launch.txt",
+    //  "Paths/Right/GoToRoller.txt",
+    //  "Paths/Right/RollerToMid.txt",
+    //  "test.txt"
+    //};
+
+  if ( pathNum == 1 ) {
+    //  "Paths/Skills/main.txt",
+  
+    changeRoller(true);
+
+    driveDist(-4);
+    Drivetrain.turnToHeading(150, degrees);
+
+    PickerUper.setVelocity(100, percent);
+    driveDist(17);
+
+    Drivetrain.turnToHeading(90, degrees);
+    PickerUper.setVelocity(0, percent);
+
+    driveDist(9);
+
+    changeRoller(true);
+
+    driveDist(-6);
+
+    Drivetrain.turnToHeading(0, degrees);
+
+    driveDist(-55);
+
+    LauncherGroup.spin(fwd, 9, vex::voltageUnits::volt);
+
+    Drivetrain.turnToHeading(5, degrees);
+
+    wait(2, seconds);
+
+    LauncherFeeder.setVelocity(50, percent);
+
+    wait(3, seconds);
+
+    LauncherGroup.spin(fwd, 0, vex::voltageUnits::volt);
+    Drivetrain.turnToHeading(0, degrees);
+    LauncherFeeder.setVelocity(0, percent);
+
+    driveDist(27);
+
+    Drivetrain.turnToHeading(-86, degrees);
+
+    // Pickup 3 long dist 
+
+    
+    //PickerUper.setVelocity(100, percent);
+
+    driveDist(70);
+
+    /*
+    LauncherGroup.spin(fwd, 9, vex::voltageUnits::volt);
+    Drivetrain.turnToHeading(130, degrees);
+
+    wait(2, seconds);
+
+    LauncherFeeder.setVelocity(30, percent);
+
+    wait(4, seconds);
+
+    LauncherGroup.spin(fwd, 0, vex::voltageUnits::volt);
+    LauncherFeeder.setVelocity(0, percent);
+
+  */
+
+    driveDist(10, false);
+    driveDist(-10, false);
+
+    PickerUper.setVelocity(100, percent);
+
+    Drivetrain.turnToHeading(-135, degrees);
+
+    driveDist(70, false);
+
+    PickerUper.setVelocity(0, percent);
+
+    Drivetrain.turnToHeading(-90, degrees);
+
+    driveDist(8);
+
+    changeRoller(true);
+
+    driveDist(-4);
+
+    Drivetrain.turnToHeading(125, degrees);
+
+    PickerUper.setVelocity(100, percent);
+
+    driveDist(13);
+
+    PickerUper.setVelocity(0, percent);
+
+    Drivetrain.turnToHeading(180, degrees);
+
+    driveDist(16);
+
+    changeRoller(true);
+
+    driveDist(-20);
+
+    Drivetrain.turnToHeading(45, degrees);
+
+    driveDist(20);
+
+    expand();
+
+    driveDist(-20);
+
+  }
+  if ( pathNum == 2 ) {
+    //  "Paths/Left/Launch.txt",
+
+    Drivetrain.setTurnVelocity(100, percent);
+
+    driveDist(-5);
+    //sideDrive(50, 0.75);
+    
+    Drivetrain.turnToHeading(-90, degrees);
+
+    driveDist(15, false, 60);
+
+    Drivetrain.turnToHeading(-139, degrees);
+    PickerUper.setVelocity(90, percent);
+    
+    driveDist(20, false, 80);
+  
+    //Drivetrain.turnToHeading(-45, degrees);
+    LauncherGroup.spin(fwd, 10, vex::voltageUnits::volt);
+    
+    //driveDist(-8, false, 40);
+    Drivetrain.turnToHeading(-33, degrees);
+
+    driveDist(-4);
+
+    wait(2, seconds);
+
+    LauncherFeeder.setVelocity(30, percent);
+    
+    wait(4, seconds);
+
+    LauncherGroup.spin(fwd, 11, vex::voltageUnits::volt);
+
+    wait(10, seconds);
+    
+    LauncherGroup.setVelocity(0, percent);
+    LauncherFeeder.setVelocity(0, percent);
+    PickerUper.setVelocity(0, percent);
+
+  }
+  if ( pathNum == 3 ) {
+    //  "Paths/Right/GoToRoller.txt",
+
+    //driveDist(4, false, 30);
+    Drivetrain.setHeading(-90, degrees);
+    driveDist(20, false, 50);
+    Drivetrain.turnToHeading(0, degrees);
+    driveDist(5, false, 30);
+    
+  }
+  if ( pathNum == 4 ) {
+    //  "Paths/Right/RollerToMid.txt",
+
+    
+    LauncherGroup.spin(fwd, 10, vex::voltageUnits::volt);
+
+    driveDist(-3, false, 30);
+    Drivetrain.turnToHeading(130, degrees);
+    PickerUper.setVelocity(100, percent);
+    driveDist(37, false, 70);
+    
+    Drivetrain.turnToHeading(30, degrees);
+    PickerUper.setVelocity(0, percent);
+
+    //driveDist(-4, false, 50);
+
+    wait(2, seconds);
+
+    LauncherFeeder.setVelocity(20, percent);
+
+  }
+  if ( pathNum == 5 ) {
+    //  "test.txt"
+
+  }
+
   return true;
 };

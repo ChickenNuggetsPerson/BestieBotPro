@@ -22,11 +22,9 @@
 // LineRight            line          H               
 // ---- END VEXCODE CONFIGURED DEVICES ----
 
-
 #include "vex.h"
 
 #include <fstream>
-
 
 #include "userAutonomous.h"
 #include "userFunctions.h"
@@ -55,12 +53,10 @@ void pneumaticPressed( void ) {
       confirm = false;
       launchConfirm = false;
     }
-
+    
     if (Controller1.ButtonRight.pressing()) {
       // Launch
-
       botAi.aiDebug("Launching");
-
       fnewmatics.set(true);
       fnewmaticsB.set(true);
 
@@ -70,11 +66,40 @@ void pneumaticPressed( void ) {
       wait(2, seconds);
       fnewmatics.set(false);
       fnewmaticsB.set(false);
+
+      int i;
+      for (i = 0; i < 0; i++) {
+        fnewmatics.set(true);
+        fnewmaticsB.set(true);
+        wait(0.1, seconds);
+        fnewmatics.set(false);
+        fnewmaticsB.set(false);
+        wait(0.1, seconds);
+        
+      }
     }
 
   }
 
-};
+}
+
+void recalibrate() {
+  if (gyroSensor.installed()) {
+    Brain.Screen.newLine();
+    Brain.Screen.print("Starting Calibration");
+    Controller1.Screen.clearScreen();
+    Controller1.Screen.setCursor(2, 1);
+    Controller1.Screen.print("Calibrating...");
+    Controller1.Screen.setCursor(3, 1);
+    Controller1.Screen.print("Do Not Touch Robot");
+    Controller1.rumble("..");
+    gyroSensor.startCalibration();
+    while (gyroSensor.isCalibrating()) { wait(100, msec);}
+  } else {
+    Brain.Screen.newLine();
+    Brain.Screen.print("Inertial Sensor Not Installed");
+  }
+}
 
 
 // A global instance of competition
@@ -95,6 +120,7 @@ competition Competition;
 void pre_auton(void) {
   // Initializing Robot Configuration. DO NOT REMOVE!
   vexcodeInit();
+
 }
 
 /*---------------------------------------------------------------------------*/
@@ -177,6 +203,7 @@ void usercontrol(void) {
 
   replaying = false;
 
+
   LauncherFeeder.setVelocity(0, percent);
   PickerUper.setVelocity(0, percent);
   LauncherGroup.setVelocity(0, percent);
@@ -193,6 +220,8 @@ void usercontrol(void) {
 // Once the match is started
 int whenStarted() {
 
+  Controller1.Screen.clearScreen();
+
   // Start the motors with 0% velocity
   LauncherGroup.spin(forward);
   LauncherGroup.setVelocity(0.0, percent);
@@ -204,13 +233,36 @@ int whenStarted() {
 
   fnewmatics.set(false);
   fnewmaticsB.set(false);
+
+  if (Controller1.ButtonY.pressing()) {
+    replaying = true;
+    while (LauncherGroup.temperature(vex::temperatureUnits::fahrenheit) < 110 && !Controller1.ButtonLeft.pressing()) {
+      LauncherGroup.spin(fwd, 100, voltageUnits::volt);
+      Controller1.Screen.clearScreen();
+      Controller1.Screen.setCursor(1, 1);
+      Controller1.Screen.print("Heating Motor");
+      Controller1.Screen.newLine();
+      Controller1.Screen.print("Temp: ");
+      Controller1.Screen.print(LauncherGroup.temperature(vex::temperatureUnits::fahrenheit));
+      wait(5, seconds);
+      LauncherGroup.spin(fwd, -100, voltageUnits::volt);
+      Controller1.Screen.clearScreen();
+      Controller1.Screen.setCursor(1, 1);
+      Controller1.Screen.print("Heating Motor");
+      Controller1.Screen.newLine();
+      Controller1.Screen.print("Temp: ");
+      Controller1.Screen.print(LauncherGroup.temperature(vex::temperatureUnits::fahrenheit));
+      wait(5, seconds);
+    }
+    replaying = false;
+    LauncherGroup.spin(fwd, 0, voltageUnits::volt);
+  }
   
   // ^^ Inside joke in the team 
 
   //Brain.Screen.print(Competition.isCompetitionSwitch());
 
   botAi.init(); // Inits the ai object
-
 
   // Quality of life feature... 
   // Controller will notify the user if the battery is under 30%
@@ -231,12 +283,13 @@ int whenStarted() {
   
   botAi.aiDebug("Homie");
 
-  double nextWarnTime = Brain.timer(vex::timeUnits::msec);
+  double driveNextWarnTime = Brain.timer(vex::timeUnits::msec);
+  double launchNextWarnTime = Brain.timer(vex::timeUnits::msec);
 
   // Loop that controlls the controller's display
   while (true) {
     
-    wait(0.5, seconds);
+    wait(0.25, seconds);
 
     Controller1.Screen.setCursor(1, 0);
     Controller1.Screen.clearScreen();
@@ -250,11 +303,17 @@ int whenStarted() {
       Controller1.Screen.print("Juice Left: ");
       //                         ^ Inside joke
       Controller1.Screen.print(Brain.Battery.capacity() - 20);
+
+      Controller1.Screen.print("  ");
+      Controller1.Screen.print(LauncherGroup.velocity(rpm));
+
       Controller1.Screen.newLine();
       Controller1.Screen.print("Drive Temp: ");
       Controller1.Screen.print(Drivetrain.temperature(percent));
       Controller1.Screen.newLine();
-      Controller1.Screen.print("^ Extend");
+      Controller1.Screen.print("Lanch Temp: ");
+      Controller1.Screen.print(LauncherGroup.temperature(vex::temperatureUnits::fahrenheit));
+
    
     }
     if (launchConfirm) {
@@ -268,30 +327,79 @@ int whenStarted() {
 
     }
 
+    
+    if (Controller1.ButtonRight.pressing()) {
+      bool alignMenu = true;
+      Controller1.Screen.clearScreen();
+      Controller1.Screen.setCursor(1, 1);
+      Controller1.Screen.print("Choose Alignment Pos");
+      Controller1.rumble("..");
+
+      int headingOffset = 0;
+      if ( botAi.startPos == 1 ) { headingOffset = -270; }
+
+      wait(1, seconds);
+
+      while (alignMenu) {
+
+        if (Controller1.ButtonRight.pressing()) {
+          Drivetrain.turnToHeading(-90 + headingOffset, degrees);
+          alignMenu = false;
+        }
+
+        if (Controller1.ButtonDown.pressing()) {
+          Drivetrain.turnToHeading(-45 + headingOffset, degrees);
+          alignMenu = false;
+        }
+
+        if (Controller1.ButtonLeft.pressing()) {
+          Drivetrain.turnToHeading(0 + headingOffset, degrees);
+          alignMenu = false;
+        }
+
+        wait(0.3, seconds);
+      }
+    }
+
+
     // Warn the driver when the Drivetrain temperature is above 65%
     // In testing the motors start to slow down when they get above 70%
 
     // The menu shows for 10 seconds and then will show again after a minute
-    if (Drivetrain.temperature(percent) >= 60 && Brain.timer(vex::timeUnits::msec) > nextWarnTime) {
+    if (Drivetrain.temperature(percent) >= 60 && Brain.timer(vex::timeUnits::msec) > driveNextWarnTime) {
       Controller1.Screen.setCursor(1, 0);
       Controller1.Screen.clearScreen();   
       Controller1.Screen.print("WARNING");
       Controller1.Screen.setCursor(2, 0);
       Controller1.Screen.print("Drivetrain Temp High");
-      Controller1.Screen.setCursor(4, 0);
+      Controller1.Screen.setCursor(3, 0);
       Controller1.Screen.print("Temp: ");
       Controller1.Screen.print(Drivetrain.temperature(percent));
       Controller1.Screen.print("%");   
       Controller1.rumble("....");
-      nextWarnTime = Brain.timer(vex::timeUnits::msec) + 60000;  
-      wait(10, seconds);
+      driveNextWarnTime = Brain.timer(vex::timeUnits::msec) + 60000;  
+      wait(5, seconds);
+    }
+
+
+    if (LauncherGroup.temperature(vex::temperatureUnits::celsius) >= 50 && Brain.timer(vex::timeUnits::msec) > launchNextWarnTime) {
+      Controller1.Screen.setCursor(1, 0);
+      Controller1.Screen.clearScreen();   
+      Controller1.Screen.print("WARNING");
+      Controller1.Screen.setCursor(2, 0);
+      Controller1.Screen.print("Launcher Temp High");
+      Controller1.Screen.setCursor(3, 0);
+      Controller1.Screen.print("Temp: ");
+      Controller1.Screen.print(LauncherGroup.temperature(vex::temperatureUnits::fahrenheit));
+      Controller1.Screen.print("%");   
+      Controller1.rumble("....");
+      launchNextWarnTime = Brain.timer(vex::timeUnits::msec) + 60000;  
+      wait(5, seconds);
     }
   }
 
   return 0;
 }
-
-
 
 //
 // Main will set up the competition functions and callbacks.
@@ -324,8 +432,25 @@ int main() {
   Controller1.ButtonL1.released(buttonL1Released);
 
   Controller1.ButtonUp.pressed(pneumaticPressed);
+  Controller1.ButtonLeft.pressed(buttonLeftPressed);
 
-  // Start the main loop
+  
+
+  // Calibrate Sensor and start main loop
+  recalibrate();
+  
+  //if ( LauncherGroup.temperature(vex::temperatureUnits::fahrenheit) < 105 && !Competition.isAutonomous() ) {
+  //  Controller1.Screen.clearScreen();
+  //  Controller1.Screen.setCursor(1, 1);
+  //  Controller1.Screen.print("Launcher Temp");
+  //  Controller1.Screen.setCursor(2, 1);
+  //  Controller1.Screen.print("Is Bellow");
+  //  Controller1.Screen.setCursor(3, 1);
+  //  Controller1.Screen.print("113 Degrees");
+  //  Controller1.rumble("----");
+  //  wait(2, seconds);
+  //}
+
   whenStarted();
 
   // Prevent main from exiting with an infinite loop.

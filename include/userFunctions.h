@@ -27,5 +27,6 @@ void buttonR1Released(void);
 
 void buttonL1Released(void);
 
+void buttonLeftPressed(void);
 
 //#endif

@@ -16,22 +16,22 @@ int runMainFeeder = 0;
 // Rev up and down for the disk launcher
 void StartLauncherControl() {
   //Brain.Screen.print("DEBUG: Starting Rev Code");
+
+  LauncherGroup.setStopping(coast);
   
-  double maxVel = 100;
+  double maxVel = 80; // 65 Normally
 
   while (true) {
     wait(0.05, seconds);
 
-    if (LauncherGroup.temperature(vex::temperatureUnits::celsius) > 45) {
-      maxVel = 50;
-    } else { maxVel = 100; };
+    if (replaying) {break;}
 
     if (RunLauncher == 1) {
       LauncherVel = LauncherVel + 5.0;
     } else if (RunLauncher == 0 ) {
-      LauncherVel = LauncherVel + -5.0;
+      LauncherVel = LauncherVel + -2.0;
     }
-    if (LauncherVel > maxVel) {
+    if (LauncherVel > maxVel) { 
       LauncherVel = maxVel;
     }
     if (LauncherVel < 0.0) {
@@ -39,23 +39,28 @@ void StartLauncherControl() {
     }
     
     if (!Controller1.ButtonDown.pressing()) {
-      LauncherGroup.setVelocity(LauncherVel, percent);
-      //LauncherGroupMotorA.setVelocity(LauncherVel, percent);
-      //LauncherGroupMotorB.setVelocity(LauncherVel - 20, percent);
+      if (LauncherVel == 0) {LauncherGroup.stop(coast);} else {
+        //LauncherGroup.spin(fwd);
+        //LauncherGroup.setVelocity(LauncherVel, percent);
+        LauncherGroup.spin(fwd, (LauncherVel / 100) * 12, vex::voltageUnits::volt);
+      } 
       
     } else {
-      LauncherGroup.setVelocity(-50, percent);
+      LauncherGroup.spin(fwd);
+      //LauncherGroup.setVelocity(-50, percent);
+      LauncherGroup.spin(reverse, (50 / 100) * 12, vex::voltageUnits::volt);
     }
 
 
     if (runLauncherFeeder == 0) {
       LauncherFeeder.setVelocity(0, percent);
+
     }
     if (runLauncherFeeder == 1) {
-      LauncherFeeder.setVelocity(100, percent);
+      LauncherFeeder.setVelocity(50, percent);
     }
     if (runLauncherFeeder == -1) {
-      LauncherFeeder.setVelocity(-100, percent);
+      LauncherFeeder.setVelocity(-50, percent);
     }
 
     if (runMainFeeder == 0) { PickerUper.setVelocity(0, percent); }
@@ -81,11 +86,10 @@ void buttonYPressed() {
 
 void buttonBPressed() {
   // Launcher Belt Control
-  
-  if (runLauncherFeeder == 0) {
-    runLauncherFeeder = 1;
+  if ( RunLauncher == 0) {
+    RunLauncher = 1;
   } else {
-    runLauncherFeeder = 0;
+    RunLauncher = 0;
   }
 }
 
@@ -98,12 +102,13 @@ void buttonL2Released() {
 }
 
 void buttonR2Pressed() {
-  RunLauncher = 1;
+  //RunLauncher = 1;
+  runLauncherFeeder = 1;
 }
 
 void buttonR2Released() {
-  RunLauncher = 0;
   runLauncherFeeder = 0;
+  RunLauncher = 0;
 }
 
 void buttonR1Pressed() {
@@ -120,4 +125,10 @@ void buttonR1Released() {
 
 void buttonL1Released() {
   runMainFeeder = 0;
+}
+
+void buttonLeftPressed() {
+  RunLauncher = 0;
+  runMainFeeder = 0;
+  runLauncherFeeder = 0;
 }
